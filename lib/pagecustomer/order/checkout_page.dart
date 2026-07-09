@@ -40,10 +40,11 @@ class CheckoutPage extends StatelessWidget {
   }
 
 
-  int get shipping => 12000;
+  int get shipping => 0;
 
 
-  int get grandTotal => subtotal + shipping;
+  // int get grandTotal => subtotal + shipping;
+int get grandTotal => subtotal;
 
 
   String currency(int value) {
@@ -951,6 +952,14 @@ class CheckoutPage extends StatelessWidget {
             'Subtotal Produk',
 
             currency(subtotal),
+
+          ),
+
+          _paymentRow(
+
+            'Ongkos Kirim',
+
+            currency(shipping),
 
           ),
 

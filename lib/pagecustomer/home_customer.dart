@@ -24,105 +24,6 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
     super.initState();
   }
 
-
-  final List<String> _months = const [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ];
-  // String monthText = 'Statistik Bulan Januari';
-  // String yearText = '2026';
-  // void _showMonthPicker() {
-  //   showModalBottomSheet(
-  //     context: context,
-  //     backgroundColor: Colors.white,
-  //     shape: const RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-  //     ),
-  //     builder: (_) {
-  //       return SafeArea(
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             // Header
-  //             Padding(
-  //               padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-  //               child: Row(
-  //                 children: [
-  //                   const Expanded(
-  //                     child: Text(
-  //                       'Pilih Bulan',
-  //                       style: TextStyle(
-  //                         fontWeight: FontWeight.w900,
-  //                         color: AppTheme.textDark,
-  //                         fontSize: 14,
-  //                       ),
-  //                     ),
-  //                   ),
-  //                   TextButton(
-  //                     onPressed: () => Navigator.pop(context),
-  //                     child: const Text(
-  //                       'Tutup',
-  //                       style: TextStyle(fontWeight: FontWeight.w800),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             const Divider(height: 1, color: Color(0xFFEFE6EC)),
-
-  //             // List bulan
-  //             Flexible(
-  //               child: ListView.separated(
-  //                 shrinkWrap: true,
-  //                 itemCount: _months.length,
-  //                 separatorBuilder: (_, __) =>
-  //                     const Divider(height: 1, color: Color(0xFFEFE6EC)),
-  //                 itemBuilder: (context, i) {
-  //                   final m = _months[i];
-  //                   final selected = monthText == 'Statistik Bulan $m';
-  //                   return ListTile(
-  //                     onTap: () {
-  //                       setState(() => monthText = 'Statistik Bulan $m');
-  //                       Navigator.pop(context);
-
-  //                       // TODO: trigger reload data presensi sesuai bulan
-  //                       // fetchPresensi(month: i+1, year: int.parse(yearText));
-  //                     },
-  //                     title: Text(
-  //                       m,
-  //                       style: const TextStyle(
-  //                         fontWeight: FontWeight.w800,
-  //                         color: AppTheme.textDark,
-  //                       ),
-  //                     ),
-  //                     trailing: selected
-  //                         ? const Icon(
-  //                             Icons.check_circle,
-  //                             color: AppTheme.primary,
-  //                           )
-  //                         : const Icon(Icons.chevron_right_rounded),
-  //                   );
-  //                 },
-  //               ),
-  //             ),
-  //             const SizedBox(height: 10),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _topAppBar() {
     return Container(
       height: 76,
@@ -213,51 +114,84 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
             : '-';
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEFE6EC)),
+
+            borderRadius: BorderRadius.circular(20),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
+
           child: Row(
             children: [
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
+
                     Text(
                       greeting,
+
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
+                        fontSize: 16,
                         color: AppTheme.textDark,
                       ),
                     ),
+
+
                     const SizedBox(height: 6),
+
+
                     Text(
                       userName,
+
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
+                        fontSize: 14,
                         color: Color(0xFF6F646B),
                       ),
                     ),
+
                   ],
                 ),
               ),
+
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
+
                 children: [
+
                   Text(
                     dateText,
+
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
                       fontSize: 12,
+                      color: AppTheme.textDark,
                     ),
                   ),
+
                 ],
               ),
+
             ],
           ),
         );
@@ -279,157 +213,287 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
     return time;
   }
 
-  Widget _menuGrid() {
-    final items = <_MenuItemData>[
-      _MenuItemData('Order', Icons.shopping_bag_outlined),
-      _MenuItemData('Scan Alat', Icons.qr_code_scanner_rounded),
-      _MenuItemData('Pengiriman', Icons.local_shipping_outlined),
-      _MenuItemData('Brosur', Icons.menu_book_rounded),
-    ];
+Widget _menuGrid() {
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEFE6EC)),
-      ),
-      child: GridView.builder(
-        itemCount: items.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.85,
-        ),
-        itemBuilder: (context, i) {
-          final it = items[i];
-          return InkWell(
-            onTap: () {
-              // if (it.label == 'Lainya..') {
-              //   MoreMenuFullScreen.show(context);
-              //   return;
-              // }
+  final items = <_MenuItemData>[
 
-              // Arahkan ke halaman Karyawanku
-              if (it.label == 'Order') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OrderCustomerPage()),
-                );
-                return;
-              }
-              if (it.label == 'Scan Alat') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AlatPage()),
-                );
-                return;
-              }
-              if (it.label == 'Pengiriman') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PengirimanPage()),
-                );
-                return;
-              }
-              if (it.label == 'Brosur') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BrosurPage()),
-                );
-                return;
-              }
+    _MenuItemData(
+      'Order',
+      Icons.shopping_bag_outlined,
+      subtitle: 'Memesan Produk',
+      badge: 'BARU!',
+    ),
 
-              //menu selanjutnya
-            },
 
-            borderRadius: BorderRadius.circular(14),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4ECF2),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFEADDE6)),
-                  ),
-                  child: Icon(it.icon, color: AppTheme.primary, size: 20),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  it.label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF6F646B),
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          );
+    _MenuItemData(
+      'Scan Alat',
+      Icons.qr_code_scanner_rounded,
+      subtitle: 'Scan perangkat HB',
+    ),
+
+
+    _MenuItemData(
+      'Pengiriman',
+      Icons.local_shipping_outlined,
+      subtitle: 'Cek status kirim',
+    ),
+
+
+    _MenuItemData(
+      'Brosur',
+      Icons.menu_book_rounded,
+      subtitle: 'Lihat katalog',
+    ),
+
+  ];
+
+
+  return GridView.builder(
+
+    itemCount: items.length,
+
+    shrinkWrap: true,
+
+    physics: const NeverScrollableScrollPhysics(),
+
+
+    gridDelegate:
+      const SliverGridDelegateWithFixedCrossAxisCount(
+
+      crossAxisCount: 2,
+
+      crossAxisSpacing: 14,
+
+      mainAxisSpacing: 14,
+
+      childAspectRatio: 1.5,
+
+    ),
+
+
+    itemBuilder: (context, i) {
+
+
+      final it = items[i];
+
+
+      return InkWell(
+
+        borderRadius: BorderRadius.circular(20),
+
+
+        onTap: () {
+
+          if (it.label == 'Order') {
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const OrderCustomerPage(),
+              ),
+            );
+
+          }
+
+
+          if (it.label == 'Scan Alat') {
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AlatPage(),
+              ),
+            );
+
+          }
+
+
+          if (it.label == 'Pengiriman') {
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PengirimanPage(),
+              ),
+            );
+
+          }
+
+
+          if (it.label == 'Brosur') {
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BrosurPage(),
+              ),
+            );
+
+          }
+
         },
-      ),
-    );
-  }
 
 
-  // Widget _sectionTitle() {
-  //   return Row(
-  //     children: [
-  //       Container(
-  //         width: 4,
-  //         height: 16,
-  //         decoration: BoxDecoration(
-  //           color: AppTheme.primary,
-  //           borderRadius: BorderRadius.circular(6),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 8),
-  //       // BAGIAN BULAN (KLIK)
-  //       InkWell(
-  //         onTap: _showMonthPicker,
-  //         borderRadius: BorderRadius.circular(10),
-  //         child: Padding(
-  //           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-  //           child: Row(
-  //             children: [
-  //               Text(
-  //                 monthText,
-  //                 style: const TextStyle(
-  //                   fontWeight: FontWeight.w900,
-  //                   color: AppTheme.textDark,
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 6),
-  //               const Icon(
-  //                 Icons.keyboard_arrow_down_rounded,
-  //                 color: AppTheme.textDark,
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
+        child: Container(
 
-  //       const Spacer(),
-  //       const SizedBox(width: 10),
-  //       Text(
-  //         yearText,
-  //         style: const TextStyle(
-  //           fontWeight: FontWeight.w900,
-  //           color: AppTheme.textDark,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+          padding: const EdgeInsets.all(16),
 
+
+          decoration: BoxDecoration(
+
+            color: Colors.white,
+
+
+            borderRadius: BorderRadius.circular(20),
+
+
+            boxShadow: [
+
+              BoxShadow(
+
+                color: Colors.black.withOpacity(0.05),
+
+                blurRadius: 12,
+
+                offset: const Offset(0,4),
+
+              ),
+
+            ],
+
+          ),
+
+
+          child: Stack(
+
+            children: [
+
+
+              Column(
+
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+
+                mainAxisAlignment:
+                    MainAxisAlignment.start,
+
+
+                children: [
+
+
+                  Icon(
+
+                    it.icon,
+
+                    size: 34,
+
+                    color: AppTheme.primary,
+
+                  ),
+
+
+                  const SizedBox(height: 8),
+
+
+                  Text(
+
+                    it.label,
+
+                    maxLines: 1,
+
+                    overflow:
+                        TextOverflow.ellipsis,
+
+
+                    style: const TextStyle(
+
+                      fontSize: 18,
+
+                      fontWeight:
+                          FontWeight.w800,
+
+                      color: Colors.black,
+
+                    ),
+
+                  ),
+
+
+                  // const SizedBox(height: 4),
+
+
+                  Text(
+
+                    it.subtitle ?? '',
+
+
+                    maxLines: 1,
+
+                    overflow:
+                        TextOverflow.ellipsis,
+
+
+                    style: const TextStyle(
+
+                      fontSize: 13,
+
+                      color:
+                          Color(0xFF999999),
+
+                    ),
+
+                  ),
+
+                ],
+
+              ),
+
+
+
+              if(it.badge != null)
+
+                Positioned(
+
+                  right: 0,
+
+                  top: 0,
+
+                  child: Text(
+
+                    it.badge!,
+
+
+                    style: const TextStyle(
+
+                      color:
+                          Color(0xFFE91E63),
+
+                      fontSize: 12,
+
+                      fontWeight:
+                          FontWeight.w900,
+
+                    ),
+
+                  ),
+
+                ),
+
+
+            ],
+
+          ),
+
+        ),
+
+      );
+
+    },
+
+  );
+
+}
   Widget _statGrid() {
     final stats = [
       _StatData('Total Order', '0', Icons.receipt_long_rounded, true),
@@ -449,11 +513,24 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
       itemBuilder: (context, i) {
         final s = stats[i];
         return Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEFE6EC)),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+
+              BoxShadow(
+
+                color: Colors.black.withOpacity(0.05),
+
+                blurRadius: 12,
+
+                offset: const Offset(0,4),
+
+              ),
+
+            ],
+
           ),
           child: Row(
             children: [
@@ -504,48 +581,61 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Column(
-        children: [
-          _topAppBar(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: Column(
-                children: [
-                  _profileCard(),
-                  const SizedBox(height: 12),
-                  _menuGrid(),
-                  // const SizedBox(height: 12),
-                  // _sectionTitle(),
-                  const SizedBox(height: 4),
-                  _statGrid(),
-                ],
-              ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: AppTheme.bg,
+
+    body: Column(
+      children: [
+
+        _topAppBar(),
+
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+
+              children: [
+
+                _profileCard(),
+
+                // const SizedBox(height: 8),
+
+                _menuGrid(),
+
+                // const SizedBox(height: 8),
+
+                _statGrid(),
+
+              ],
             ),
           ),
-        ],
-      ),
-      // bottomNavigationBar: AppBottomNav(
-      //   currentIndex: _currentIndex,
-      //   onTap: (i) {
-      //     setState(() => _currentIndex = i);
-      //     // TODO: routing sesuai index
-      //     // contoh:
-      //     // if (i == 0) ...
-      //   },
-      // ),
-    );
-  }
+        ),
+
+      ],
+    ),
+  );
+}
 }
 
 class _MenuItemData {
   final String label;
   final IconData icon;
-  _MenuItemData(this.label, this.icon);
+  final String? subtitle;
+  final String? badge;
+
+  _MenuItemData(
+    this.label,
+    this.icon, {
+    this.subtitle,
+    this.badge,
+  });
 }
 
 class _StatData {

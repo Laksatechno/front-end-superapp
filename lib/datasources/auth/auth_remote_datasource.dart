@@ -217,6 +217,8 @@ Future<Either<String, String>> logout() async {
           'marketing_id': marketingId,
         }),
       );
+      // print data body 
+      print("Jenis Institusi: " + jenisInstitusi);
 
       final body = jsonDecode(response.body);
 

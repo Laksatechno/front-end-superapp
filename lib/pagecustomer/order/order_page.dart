@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yofa/core/constants/variables.dart';
 import 'package:yofa/pageadmin/sales/getproducts/model/customer_product_price_model.dart';
 import 'package:yofa/pagecustomer/order/checkout_page.dart';
+import 'package:yofa/pagecustomer/order/product_details.dart';
 import 'package:yofa/pagecustomer/product/bloc/productuser_bloc.dart';
 import 'package:yofa/theme/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
@@ -391,6 +392,8 @@ String _image(CustomerProductPrice item) {
                           onAdd: () => addToCart(index),
                           onRemove: () => removeFromCart(index),
                           onTapQty: () => showQtyDialog(index, qty),
+                          product: item,
+                          context: context,
                         );
                       },
                     );
@@ -475,6 +478,8 @@ class _ProductCard extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onRemove;
   final VoidCallback onTapQty;
+  final CustomerProductPrice product;
+  final BuildContext context;
 
   const _ProductCard({
     required this.productId,
@@ -485,43 +490,54 @@ class _ProductCard extends StatelessWidget {
     required this.onAdd,
     required this.onRemove,
     required this.onTapQty,
+    required this.product,
+    required this.context,
   });
 
   
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailsPage(product: product),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: image.isNotEmpty
-                  ? Image.network(Variables.storageUrl +
-                      image,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                child: image.isNotEmpty
+                    ? Image.network(
+                        Variables.storageUrl + image,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -617,8 +633,10 @@ class _ProductCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
+
 
   Widget _buildPlaceholder() {
     return Container(
