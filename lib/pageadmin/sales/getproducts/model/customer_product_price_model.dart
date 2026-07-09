@@ -53,6 +53,7 @@ class ProductLite {
   final int id;
   final String name;
   final String? imageUrl;
+  final String? description;
   final int stock;
   final bool isSerialized;
 
@@ -66,6 +67,7 @@ class ProductLite {
     required this.id,
     required this.name,
     this.imageUrl,
+    this.description,
     required this.stock,
     required this.isSerialized,
     required this.createdAt,
@@ -79,6 +81,7 @@ class ProductLite {
       id: _asInt(json['id']),
       name: (json['name'] ?? '').toString(),
       imageUrl: (json['image_url'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
       stock: _asInt(json['stock']),
       isSerialized: _asBool(json['is_serialized']),
       createdAt: _asDate(json['created_at']),

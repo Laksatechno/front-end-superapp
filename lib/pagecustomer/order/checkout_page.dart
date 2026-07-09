@@ -755,25 +755,25 @@ int get grandTotal => subtotal;
 
 
 
-                                  const SizedBox(
-                                    height: 8,
-                                  ),
+                                  // const SizedBox(
+                                  //   height: 8,
+                                  // ),
 
 
 
-                                  Text(
+                                  // Text(
 
-                                    'Jumlah : $qty',
+                                  //   'Jumlah : $qty',
 
-                                    style:
-                                        const TextStyle(
+                                  //   style:
+                                  //       const TextStyle(
 
-                                      color:
-                                          AppTheme.textMuted,
+                                  //     color:
+                                  //         AppTheme.textMuted,
 
-                                    ),
+                                  //   ),
 
-                                  ),
+                                  // ),
 
 
 

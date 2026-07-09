@@ -58,6 +58,13 @@ String _image(CustomerProductPrice item) {
   return (imageUrl != null && imageUrl.isNotEmpty) ? imageUrl : '';
 }
 
+  String _description(CustomerProductPrice item) {
+    return item.product.description?.isNotEmpty == true
+        ? item.product.description!
+        : 'Deskripsi produk akan segera tersedia.';
+  }
+
+
   String currency(int value) {
     return 'Rp ${value.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -387,6 +394,7 @@ String _image(CustomerProductPrice item) {
                           productId: _productId(item),
                           name: _name(item),
                           image: _image(item),
+                          description: _description(item),
                           price: currency(_price(item)),
                           qty: qty,
                           onAdd: () => addToCart(index),
@@ -473,6 +481,7 @@ class _ProductCard extends StatelessWidget {
   final String productId;
   final String name;
   final String image;
+  final String description;
   final String price;
   final int qty;
   final VoidCallback onAdd;
@@ -485,6 +494,7 @@ class _ProductCard extends StatelessWidget {
     required this.productId,
     required this.name,
     required this.image,
+    required this.description,
     required this.price,
     required this.qty,
     required this.onAdd,

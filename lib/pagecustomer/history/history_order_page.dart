@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yofa/pagecustomer/history/bloc/history_order_bloc.dart';
+import 'package:yofa/pagecustomer/history/datasource/history_order_ds.dart';
+import 'package:yofa/pagecustomer/history/model/history_order_model.dart';
 import 'package:yofa/theme/app_theme.dart';
 
 class HistoryCustomerOrderPage extends StatefulWidget {
@@ -11,8 +15,10 @@ class HistoryCustomerOrderPage extends StatefulWidget {
 
 class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
 
   String _selectedStatus = 'Semua';
+  String? _apiStatus;
 
   final List<String> _statusFilters = [
     'Semua',
@@ -23,206 +29,222 @@ class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
     // 'Dibatalkan',
   ];
 
-  final List<CustomerOrderHistory> _orders = [
-    CustomerOrderHistory(
-      invoice: 'INV-20260526-001',
-      date: '26 Mei 2026',
-      status: 'Selesai',
-      total: 1850000,
-      itemCount: 4,
-      paymentStatus: 'Lunas',
-      items: [
-        'Microcuvette',
-        'Golda Anti A',
-        'EDTA',
-        'Masker Medis',
-      ],
-    ),
-    CustomerOrderHistory(
-      invoice: 'INV-20260525-002',
-      date: '25 Mei 2026',
-      status: 'Dikirim',
-      total: 975000,
-      itemCount: 2,
-      paymentStatus: 'Belum Lunas',
-      items: [
-        'Microcuvette',
-        'Golda Anti A',
-      ],
-    ),
-    CustomerOrderHistory(
-      invoice: 'INV-20260524-003',
-      date: '24 Mei 2026',
-      status: 'Diproses',
-      total: 2450000,
-      itemCount: 3,
-      paymentStatus: 'Lunas',
-      items: [
-        'Microcuvette',
-        'Golda Anti A',
-        'Cuvette',
-      ],
-    ),
-    CustomerOrderHistory(
-      invoice: 'INV-20260523-004',
-      date: '23 Mei 2026',
-      status: 'Menunggu',
-      total: 650000,
-      itemCount: 1,
-      paymentStatus: 'Menunggu Pembayaran',
-      items: [
-        'Golda Anti A',
-      ],
-    ),
-    // CustomerOrderHistory(
-    //   invoice: 'INV-20260520-005',
-    //   date: '20 Mei 2026',
-    //   status: 'Dibatalkan',
-    //   total: 1200000,
-    //   itemCount: 2,
-    //   paymentStatus: 'Dibatalkan',
-    //   items: [
-    //     'Microcuvette',
-    //     'Golda Anti A',
-    //   ],
-    // ),
-  ];
-
-  List<CustomerOrderHistory> get _filteredOrders {
-    final keyword = _searchCtrl.text.toLowerCase().trim();
-
-    return _orders.where((order) {
-      final matchStatus =
-          _selectedStatus == 'Semua' || order.status == _selectedStatus;
-
-      final matchSearch =
-          order.invoice.toLowerCase().contains(keyword) ||
-          order.items.join(' ').toLowerCase().contains(keyword) ||
-          order.status.toLowerCase().contains(keyword);
-
-      return matchStatus && matchSearch;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    _scrollCtrl.addListener(_onScroll);
   }
-
-  int get _totalOrder => _orders.length;
-
-  int get _totalSelesai =>
-      _orders.where((element) => element.status == 'Selesai').length;
-
-  int get _totalProses => _orders
-      .where(
-        (element) =>
-            element.status == 'Diproses' ||
-            element.status == 'Dikirim' ||
-            element.status == 'Menunggu',
-      )
-      .length;
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    setState(() {});
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
+      final state = context.read<HistoryOrderBloc>().state;
+      state.maybeWhen(
+        loaded: (items, page, lastPage, search, status, isLoadingMore) {
+          if (!isLoadingMore && page < lastPage) {
+            context.read<HistoryOrderBloc>().add(
+              const HistoryOrderEvent.loadMore(),
+            );
+          }
+        },
+        orElse: () {},
+      );
+    }
   }
+
+  void _onStatusSelected(String status) {
+    setState(() {
+      _selectedStatus = status;
+      _apiStatus = status == 'Semua' ? null : _mapStatusToApi(status);
+    });
+    _fetchOrders();
+  }
+
+  void _onSearchChanged(String value) {
+    if (value.trim().length >= 3 || value.isEmpty) {
+      _fetchOrders();
+    }
+  }
+
+  void _fetchOrders() {
+    context.read<HistoryOrderBloc>().add(
+      HistoryOrderEvent.getOrders(
+        search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+        status: _apiStatus,
+        page: 1,
+        perPage: 10,
+      ),
+    );
+  }
+
+  Future<void> _onRefresh() async {
+    context.read<HistoryOrderBloc>().add(
+      HistoryOrderEvent.refresh(
+        search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+        status: _apiStatus,
+      ),
+    );
+  }
+
+  String? _mapStatusToApi(String status) {
+    switch (status) {
+      case 'Menunggu':
+        return 'pending';
+      case 'Diproses':
+        return 'processing';
+      case 'Dikirim':
+        return 'shipped';
+      case 'Selesai':
+        return 'completed';
+      case 'Dibatalkan':
+        return 'cancelled';
+      default:
+        return null;
+    }
+  }
+
+  int _getTotalOrder(List<CustomerOrderHistory> orders) => orders.length;
+
+  int _getTotalSelesai(List<CustomerOrderHistory> orders) =>
+      orders.where((element) => element.status == 'Selesai').length;
+
+  int _getTotalProses(List<CustomerOrderHistory> orders) =>
+      orders.where(
+        (element) =>
+            element.status == 'Diproses' ||
+            element.status == 'Dikirim' ||
+            element.status == 'Menunggu',
+      ).length;
 
   @override
   Widget build(BuildContext context) {
-    final orders = _filteredOrders;
-
-    return Scaffold(
-      backgroundColor: AppTheme.bg,
-      appBar: AppBar(
-        title: const Text('Riwayat Pesanan'),
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+    return BlocProvider(
+      create: (context) => HistoryOrderBloc(
+        HistoryOrderDataSource( // Ganti dengan token dari auth
+        ),
+      )..add(
+        const HistoryOrderEvent.getOrders(),
       ),
-      body: RefreshIndicator(
-        color: AppTheme.primary,
-        onRefresh: _onRefresh,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth >= 900;
-            final maxWidth = isDesktop ? 1000.0 : double.infinity;
-
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Scaffold(
+        backgroundColor: AppTheme.bg,
+        appBar: AppBar(
+          title: const Text('Riwayat Pesanan'),
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: _onRefresh,
+          child: BlocBuilder<HistoryOrderBloc, HistoryOrderState>(
+            builder: (context, state) {
+              return state.maybeWhen(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                loaded: (items, page, lastPage, search, status, isLoadingMore) => _buildContent(items, context),
+                error: (message) => Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _HeaderSection(
-                        totalOrder: _totalOrder,
-                        totalProses: _totalProses,
-                        totalSelesai: _totalSelesai,
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: Colors.red,
+                        size: 48,
                       ),
-                      const SizedBox(height: 16),
-                      _SearchBox(
-                        controller: _searchCtrl,
-                        onChanged: (_) => setState(() {}),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Gagal memuat data',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 14),
-                      _StatusFilter(
-                        filters: _statusFilters,
-                        selected: _selectedStatus,
-                        onSelected: (value) {
-                          setState(() {
-                            _selectedStatus = value;
-                          });
-                        },
+                      const SizedBox(height: 4),
+                      Text(
+                        message,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 18),
-                      if (orders.isEmpty)
-                        const _EmptyState()
-                      else
-                        ListView.separated(
-                          itemCount: orders.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            return _OrderCard(order: orders[index]);
-                          },
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _fetchOrders,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
                         ),
+                        child: const Text('Coba Lagi'),
+                      ),
                     ],
                   ),
                 ),
-              ),
-            );
-          },
+                orElse: () => const Center(child: CircularProgressIndicator()),
+              );
+            },
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildContent(List<CustomerOrderHistory> orders, BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 900;
+        final maxWidth = isDesktop ? 1000.0 : double.infinity;
+
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HeaderSection(
+                    totalOrder: _getTotalOrder(orders),
+                    totalProses: _getTotalProses(orders),
+                    totalSelesai: _getTotalSelesai(orders),
+                  ),
+                  const SizedBox(height: 16),
+                  _SearchBox(
+                    controller: _searchCtrl,
+                    onChanged: _onSearchChanged,
+                  ),
+                  const SizedBox(height: 14),
+                  _StatusFilter(
+                    filters: _statusFilters,
+                    selected: _selectedStatus,
+                    onSelected: _onStatusSelected,
+                  ),
+                  const SizedBox(height: 18),
+                  if (orders.isEmpty)
+                    const _EmptyState()
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: orders.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return _OrderCard(order: orders[index]);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
-class CustomerOrderHistory {
-  final String invoice;
-  final String date;
-  final String status;
-  final int total;
-  final int itemCount;
-  final String paymentStatus;
-  final List<String> items;
-
-  CustomerOrderHistory({
-    required this.invoice,
-    required this.date,
-    required this.status,
-    required this.total,
-    required this.itemCount,
-    required this.paymentStatus,
-    required this.items,
-  });
-}
+// Model ini sudah dipindahkan ke `history_order_model.dart`
+// Gunakan import untuk mengaksesnya.
 
 class _HeaderSection extends StatelessWidget {
   final int totalOrder;
@@ -243,48 +265,23 @@ class _HeaderSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppTheme.primary,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primary.withOpacity(0.18),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            border: Border.all(color: AppTheme.border),
           ),
           child: const Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.white24,
-                child: Icon(
-                  Icons.receipt_long_rounded,
-                  color: Colors.white,
-                ),
+              Icon(
+                Icons.history_rounded,
+                color: AppTheme.primary,
+                size: 28,
               ),
-              SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Riwayat Pesanan Anda',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Pantau status dan detail pesanan secara mudah.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+              SizedBox(width: 12),
+              Text(
+                'Riwayat Pesanan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -295,25 +292,25 @@ class _HeaderSection extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryCard(
-                title: 'Total',
-                value: '$totalOrder',
-                icon: Icons.shopping_bag_outlined,
+                title: 'Total Pesanan',
+                value: totalOrder.toString(),
+                icon: Icons.list_alt_rounded,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: _SummaryCard(
-                title: 'Proses',
-                value: '$totalProses',
-                icon: Icons.local_shipping_outlined,
+                title: 'Dalam Proses',
+                value: totalProses.toString(),
+                icon: Icons.inventory_2_rounded,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: _SummaryCard(
                 title: 'Selesai',
-                value: '$totalSelesai',
-                icon: Icons.check_circle_outline,
+                value: totalSelesai.toString(),
+                icon: Icons.check_circle_rounded,
               ),
             ),
           ],
@@ -355,18 +352,17 @@ class _SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
             title,
             style: const TextStyle(
               color: AppTheme.textMuted,
               fontSize: 12,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

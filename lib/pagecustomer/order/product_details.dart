@@ -35,10 +35,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   String _description(CustomerProductPrice item) {
-    // Assuming there's a description field in ProductLite
-    // If not, you can modify this to return a default value
+    if (item.product.description?.isNotEmpty == true) {
+      return item.product.description!;
+    }
+      print('Product Description: ${item.product.description}');
     return 'Deskripsi produk akan segera tersedia.';
   }
+
 
   String currency(int value) {
     return 'Rp ${value.toString().replaceAllMapped(

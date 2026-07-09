@@ -115,10 +115,7 @@ return checkoutRequested(_that);case _:
 final _that = this;
 switch (_that) {
 case CheckoutRequested():
-return checkoutRequested(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return checkoutRequested(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -177,10 +174,7 @@ return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.user
 @optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone)  checkoutRequested,}) {final _that = this;
 switch (_that) {
 case CheckoutRequested():
-return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///

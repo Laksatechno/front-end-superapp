@@ -259,13 +259,9 @@ Widget _menuGrid() {
 
     gridDelegate:
       const SliverGridDelegateWithFixedCrossAxisCount(
-
       crossAxisCount: 2,
-
       crossAxisSpacing: 14,
-
       mainAxisSpacing: 14,
-
       childAspectRatio: 1.5,
 
     ),
