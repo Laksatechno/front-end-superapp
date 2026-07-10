@@ -32,6 +32,8 @@ import 'package:yofa/pageadmin/sales/qtybatchproduct/datasource/product_batch_ds
 import 'package:yofa/pageadmin/sales/tagihansales/bloc/sales_bloc.dart';
 import 'package:yofa/pageadmin/sales/tagihansales/datasource/sales_ds.dart';
 import 'package:yofa/pageadmin/sales/tagihansales/tagihan_sales.dart';
+import 'package:yofa/pagecustomer/history/bloc/history_order_bloc.dart';
+import 'package:yofa/pagecustomer/history/datasource/history_order_ds.dart';
 import 'package:yofa/pagecustomer/product/bloc/productuser_bloc.dart';
 import 'package:yofa/pagecustomer/product/datasource/productuser_ds.dart';
 
@@ -107,9 +109,10 @@ class MyApp extends StatelessWidget {
           child: CallplanPage(),
         ),
         BlocProvider(
-  create: (_) => RiwayatBloc(RiwayatDataSource())
-    ..add(const RiwayatEvent.getRiwayats()),
-),
+          create: (_) => RiwayatBloc(RiwayatDataSource())
+            ..add(const RiwayatEvent.getRiwayats()),
+        ),
+        BlocProvider(create: (_) => HistoryOrderBloc(HistoryOrderDataSource())),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

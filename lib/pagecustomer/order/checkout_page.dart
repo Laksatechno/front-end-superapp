@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yofa/core/constants/variables.dart';
 import 'package:yofa/datasources/auth/auth_local_datasource.dart';
 import 'package:yofa/models/response/auth_response_model.dart';
+import 'package:yofa/pagecustomer/history/bloc/history_order_bloc.dart';
 import 'package:yofa/pagecustomer/order/bloc/checkout_bloc.dart';
 import 'package:yofa/pagecustomer/order/datasource/checkout_user_ds.dart';
 import 'package:yofa/pagecustomer/order/orderedsuccess_page.dart';
@@ -78,6 +79,8 @@ int get grandTotal => subtotal;
               ),
             );
 
+            //panggil bloc history order untuk refresh data
+            context.read<HistoryOrderBloc>().add(const HistoryOrderEvent.getOrders());
           }
 
 

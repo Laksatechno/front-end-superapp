@@ -17,6 +17,7 @@ class _IdentitasPageState extends State<IdentitasPage> {
   final _nameC = TextEditingController();
   final _emailC = TextEditingController();
   final _phoneC = TextEditingController();
+  final _alamatC = TextEditingController();
 
   bool _isSaving = false;
   bool _didFill = false;
@@ -43,6 +44,7 @@ class _IdentitasPageState extends State<IdentitasPage> {
     _nameC.text = u.name ?? '';
     _emailC.text = u.email ?? '';
     _phoneC.text = (u.noHp?? '').toString();
+    _alamatC.text = u.address ?? '';
   }
 
   @override
@@ -111,6 +113,13 @@ class _IdentitasPageState extends State<IdentitasPage> {
                   controller: _phoneC,
                   hint: 'Masukkan no hp (opsional)',
                   keyboardType: TextInputType.phone,
+                ),
+
+                _fieldEditable(
+                  label: 'Alamat',
+                  controller: _alamatC,
+                  hint: 'Masukkan alamat (opsional)',
+                  keyboardType: TextInputType.streetAddress,
                 ),
 
                 const SizedBox(height: 12),

@@ -245,6 +245,12 @@ Widget _menuGrid() {
       subtitle: 'Lihat katalog',
     ),
 
+    _MenuItemData(
+      'Tagihan',
+      Icons.receipt_long_rounded,
+      subtitle: 'Cek tagihan',
+    )
+
   ];
 
 
@@ -327,6 +333,21 @@ Widget _menuGrid() {
 
           }
 
+          if (it.label == 'Tagihan') {
+
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (_) => const TagihanPage(),
+            //   ),
+            // );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fitur Tagihan akan segera hadir.'),
+              ),
+            );
+          }
+          
         },
 
 

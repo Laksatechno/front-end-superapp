@@ -43,7 +43,8 @@ class HistoryOrderBloc extends Bloc<HistoryOrderEvent, HistoryOrderState> {
         ));
       }
     } catch (e) {
-      emit(HistoryOrderState.error(e.toString()));
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(HistoryOrderState.error(msg));
     }
   }
 

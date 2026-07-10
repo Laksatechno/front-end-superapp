@@ -25,6 +25,7 @@ class HistoryOrderDataSource {
         'per_page': perPage.toString(),
       },
     );
+    print('Fetching orders from: $uri'); // Debugging line
 
     final response = await http.get(
       uri,
@@ -33,6 +34,9 @@ class HistoryOrderDataSource {
         'Accept': 'application/json',
       },
     );
+
+    print ('Response status: ${response.statusCode}'); // Debugging line
+    print ('Response body: ${response.body}'); // Debugging line
 
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);

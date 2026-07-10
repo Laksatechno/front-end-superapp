@@ -3,17 +3,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yofa/pagecustomer/history/bloc/history_order_bloc.dart';
 import 'package:yofa/pagecustomer/history/datasource/history_order_ds.dart';
 import 'package:yofa/pagecustomer/history/model/history_order_model.dart';
+import 'package:yofa/pagecustomer/history/history_order_detail_page.dart';
+import 'package:yofa/pagecustomer/order/checkout_page.dart';
 import 'package:yofa/theme/app_theme.dart';
+import 'package:shimmer/shimmer.dart';
 
-class HistoryCustomerOrderPage extends StatefulWidget {
+class HistoryCustomerOrderPage extends StatelessWidget {
   const HistoryCustomerOrderPage({super.key});
 
   @override
-  State<HistoryCustomerOrderPage> createState() =>
-      _HistoryCustomerOrderPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => HistoryOrderBloc(
+        HistoryOrderDataSource(),
+      )..add(
+        const HistoryOrderEvent.getOrders(),
+      ),
+      child: const _HistoryCustomerOrderPageContent(),
+    );
+  }
 }
 
-class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
+class _HistoryCustomerOrderPageContent extends StatefulWidget {
+  const _HistoryCustomerOrderPageContent();
+
+  @override
+  State<_HistoryCustomerOrderPageContent> createState() => _HistoryCustomerOrderPageState();
+}
+
+class _HistoryCustomerOrderPageState extends State<_HistoryCustomerOrderPageContent> {
   final TextEditingController _searchCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
 
@@ -45,11 +63,12 @@ class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
   void _onScroll() {
     if (_scrollCtrl.position.pixels >=
         _scrollCtrl.position.maxScrollExtent - 200) {
-      final state = context.read<HistoryOrderBloc>().state;
+      final bloc = context.read<HistoryOrderBloc>();
+      final state = bloc.state;
       state.maybeWhen(
         loaded: (items, page, lastPage, search, status, isLoadingMore) {
           if (!isLoadingMore && page < lastPage) {
-            context.read<HistoryOrderBloc>().add(
+            bloc.add(
               const HistoryOrderEvent.loadMore(),
             );
           }
@@ -64,16 +83,16 @@ class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
       _selectedStatus = status;
       _apiStatus = status == 'Semua' ? null : _mapStatusToApi(status);
     });
-    _fetchOrders();
+    _fetchOrders(context);
   }
 
   void _onSearchChanged(String value) {
     if (value.trim().length >= 3 || value.isEmpty) {
-      _fetchOrders();
+      _fetchOrders(context);
     }
   }
 
-  void _fetchOrders() {
+  void _fetchOrders(BuildContext context) {
     context.read<HistoryOrderBloc>().add(
       HistoryOrderEvent.getOrders(
         search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
@@ -84,11 +103,16 @@ class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
     );
   }
 
+
   Future<void> _onRefresh() async {
-    context.read<HistoryOrderBloc>().add(
-      HistoryOrderEvent.refresh(
+    // Set loading state di Bloc
+    final bloc = context.read<HistoryOrderBloc>();
+    bloc.add(
+      HistoryOrderEvent.getOrders(
         search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
         status: _apiStatus,
+        page: 1,
+        perPage: 10,
       ),
     );
   }
@@ -125,120 +149,177 @@ class _HistoryCustomerOrderPageState extends State<HistoryCustomerOrderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => HistoryOrderBloc(
-        HistoryOrderDataSource( // Ganti dengan token dari auth
-        ),
-      )..add(
-        const HistoryOrderEvent.getOrders(),
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: const Text('Riwayat Pesanan'),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      child: Scaffold(
-        backgroundColor: AppTheme.bg,
-        appBar: AppBar(
-          title: const Text('Riwayat Pesanan'),
-          backgroundColor: AppTheme.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-        body: RefreshIndicator(
-          color: AppTheme.primary,
-          onRefresh: _onRefresh,
-          child: BlocBuilder<HistoryOrderBloc, HistoryOrderState>(
-            builder: (context, state) {
-              return state.maybeWhen(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                loaded: (items, page, lastPage, search, status, isLoadingMore) => _buildContent(items, context),
-                error: (message) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline_rounded,
-                        color: Colors.red,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Gagal memuat data',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message,
-                        style: Theme.of(context).textTheme.bodySmall,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _fetchOrders,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                ),
-                orElse: () => const Center(child: CircularProgressIndicator()),
+      body: BlocBuilder<HistoryOrderBloc, HistoryOrderState>(
+        builder: (context, state) {
+              return state.when(
+                initial: () => _buildContent([], context, isLoading: true),
+                loading: () => _buildContent([], context, isLoading: true),
+                loaded: (items, page, lastPage, search, status, isLoadingMore) => _buildContent(items, context, isLoading: isLoadingMore),
+                error: (message) => _buildContent([], context),
               );
             },
           ),
-        ),
-      ),
     );
   }
 
-  Widget _buildContent(List<CustomerOrderHistory> orders, BuildContext context) {
+  Widget _buildContent(List<CustomerOrderHistory> orders, BuildContext context, {bool isLoading = false}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 900;
         final maxWidth = isDesktop ? 1000.0 : double.infinity;
 
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HeaderSection(
-                    totalOrder: _getTotalOrder(orders),
-                    totalProses: _getTotalProses(orders),
-                    totalSelesai: _getTotalSelesai(orders),
+        return RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: _onRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(), // Pastikan bisa di-scroll
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _HeaderSection(
+                        totalOrder: _getTotalOrder(orders),
+                        totalProses: _getTotalProses(orders),
+                        totalSelesai: _getTotalSelesai(orders),
+                      ),
+                      const SizedBox(height: 16),
+                      _SearchBox(
+                        controller: _searchCtrl,
+                        onChanged: _onSearchChanged,
+                      ),
+                      const SizedBox(height: 14),
+                      _StatusFilter(
+                        filters: _statusFilters,
+                        selected: _selectedStatus,
+                        onSelected: _onStatusSelected,
+                      ),
+                      const SizedBox(height: 18),
+                      if (isLoading)
+                        Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 5, // Jumlah placeholder
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _buildShimmerPlaceholder();
+                            },
+                          ),
+                        )
+                      else if (orders.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.history_rounded,
+                                  color: AppTheme.hint,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Data Pesanan tidak ditemukan',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(), // Hindari konflik scroll
+                          itemCount: orders.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            return _OrderCard(order: orders[index]);
+                          },
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _SearchBox(
-                    controller: _searchCtrl,
-                    onChanged: _onSearchChanged,
-                  ),
-                  const SizedBox(height: 14),
-                  _StatusFilter(
-                    filters: _statusFilters,
-                    selected: _selectedStatus,
-                    onSelected: _onStatusSelected,
-                  ),
-                  const SizedBox(height: 18),
-                  if (orders.isEmpty)
-                    const _EmptyState()
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: orders.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _OrderCard(order: orders[index]);
-                      },
-                    ),
-                ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildShimmerPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 100,
+                height: 16,
+                color: Colors.grey,
+              ),
+              const Spacer(),
+              Container(
+                width: 60,
+                height: 16,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 14,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 150,
+            height: 14,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 80,
+                height: 14,
+                color: Colors.grey,
+              ),
+              const Spacer(),
+              Container(
+                width: 100,
+                height: 14,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -265,23 +346,48 @@ class _HeaderSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.primary,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppTheme.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withOpacity(0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: const Row(
             children: [
-              Icon(
-                Icons.history_rounded,
-                color: AppTheme.primary,
-                size: 28,
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white24,
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: Colors.white,
+                ),
               ),
-              SizedBox(width: 12),
-              Text(
-                'Riwayat Pesanan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Riwayat Pesanan Anda',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Pantau status dan detail pesanan secara mudah.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -441,15 +547,22 @@ class _StatusFilter extends StatelessWidget {
             selected: active,
             label: Text(item),
             onSelected: (_) => onSelected(item),
+
             selectedColor: AppTheme.primary,
             backgroundColor: Colors.white,
+
+            showCheckmark: true,
+            checkmarkColor: Colors.white,
+
             labelStyle: TextStyle(
               color: active ? Colors.white : AppTheme.textMuted,
               fontWeight: FontWeight.w600,
             ),
+
             side: BorderSide(
               color: active ? AppTheme.primary : AppTheme.border,
             ),
+
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -601,7 +714,12 @@ class _OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HistoryOrderDetailPage(order: order),
+                    ),
+                  ),
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   label: const Text('Detail'),
                   style: OutlinedButton.styleFrom(
@@ -616,7 +734,26 @@ class _OrderCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Konversi order.details ke format yang sesuai untuk CheckoutPage
+                    final checkoutItems = order.details.map((detail) {
+                      return {
+                        "product_id": detail['product_id'],
+                        "name": detail['product']['name'],
+                        "price": detail['price'],
+                        "qty": detail['quantity'],
+                        "image": detail['product']['image'] ?? '',
+                      };
+                    }).toList();
+
+                    // Navigasi ke CheckoutPage dengan data produk
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CheckoutPage(items: checkoutItems),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 18),
                   label: const Text('Beli Lagi'),
                   style: ElevatedButton.styleFrom(

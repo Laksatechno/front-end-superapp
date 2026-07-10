@@ -6,6 +6,7 @@ class CustomerOrderHistory {
   final int itemCount;
   final String paymentStatus;
   final List<String> items;
+  final List<Map<String, dynamic>> details;
 
   CustomerOrderHistory({
     required this.invoice,
@@ -15,24 +16,36 @@ class CustomerOrderHistory {
     required this.itemCount,
     required this.paymentStatus,
     required this.items,
+    required this.details,
   });
 
   factory CustomerOrderHistory.fromJson(Map<String, dynamic> json) {
-    final details = json['details'] as List<dynamic>;
-    final items = details.map((detail) => detail['product']['name'] as String).toList();
-    final total = json['total'] as int;
-    final status = _mapStatus(json['status'] as String);
-    final paymentStatus = _mapPaymentStatus(json['status'] as String);
-    final date = _formatDate(json['tanggal'] as String);
+    final details = (json['details'] as List<dynamic>? ?? []).map((detail) {
+      return detail is Map<String, dynamic>
+          ? detail
+          : <String, dynamic>{};
+    }).toList();
+    
+    final items = details.map((detail) {
+      return detail['product'] != null && detail['product']['name'] != null
+          ? detail['product']['name'] as String
+          : 'Produk Tidak Dikenal';
+    }).toList();
+    
+    final total = json['total'] as int? ?? 0;
+    final status = _mapStatus(json['status'] as String? ?? 'pending');
+    final paymentStatus = _mapPaymentStatus(json['status'] as String? ?? 'pending');
+    final date = json['tanggal'] != null ? _formatDate(json['tanggal'] as String) : 'Tanggal Tidak Dikenal';
 
     return CustomerOrderHistory(
-      invoice: json['invoice_number'] as String,
+      invoice: json['invoice_number'] as String? ?? 'Tidak Dikenal',
       date: date,
       status: status,
       total: total,
       itemCount: items.length,
       paymentStatus: paymentStatus,
       items: items,
+      details: details,
     );
   }
 
