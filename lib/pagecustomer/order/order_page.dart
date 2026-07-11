@@ -402,6 +402,8 @@ String _image(CustomerProductPrice item) {
                           onTapQty: () => showQtyDialog(index, qty),
                           product: item,
                           context: context,
+                          addToCart: addToCart,
+                          products: products,
                         );
                       },
                     );
@@ -489,6 +491,8 @@ class _ProductCard extends StatelessWidget {
   final VoidCallback onTapQty;
   final CustomerProductPrice product;
   final BuildContext context;
+  final Function(int) addToCart;
+  final List<CustomerProductPrice> products;
 
   const _ProductCard({
     required this.productId,
@@ -502,6 +506,8 @@ class _ProductCard extends StatelessWidget {
     required this.onTapQty,
     required this.product,
     required this.context,
+    required this.addToCart,
+    required this.products,
   });
 
   
@@ -513,7 +519,11 @@ class _ProductCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductDetailsPage(product: product),
+            builder: (_) => ProductDetailsPage(
+              product: product,
+              addToCart: addToCart,
+              products: products,
+            ),
           ),
         );
       },
