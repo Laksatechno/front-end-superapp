@@ -1,5 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:yofa/core/constants/variables.dart';
+import 'package:yofa/datasources/auth/auth_local_datasource.dart';
 import 'package:yofa/pagecustomer/history/model/history_order_model.dart';
+import 'package:yofa/pageadmin/sales/tagihansales/pdfview_page.dart';
 import 'package:yofa/theme/app_theme.dart';
 
 class HistoryOrderDetailPage extends StatelessWidget {
@@ -155,28 +162,118 @@ class HistoryOrderDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // Implementasi download invoice
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Fitur download invoice belum tersedia.')),
+Widget _buildDownloadButton(BuildContext context) {
+  return SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      onPressed: () async {
+        final url =
+            '${Variables.baseUrl}/sales/print/${order.idSales}';
+        print("PDF URL : $url");
+        final authData = await AuthLocalDatasource().getAuthData();
+      final token = authData?.token;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Menyiapkan invoice...'
+                ),
+              ),
+            );
+        try {
+          final response = await http.get(
+            Uri.parse(url),
+            headers: {
+              "Accept": "application/pdf",
+              "Authorization":"Bearer $token",
+            },
           );
-        },
-        icon: const Icon(Icons.download, color: Colors.white),
-        label: const Text('Download Invoice', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+
+          print(
+            "STATUS : ${response.statusCode}"
+          );
+
+          if(response.statusCode == 200){
+print(
+  String.fromCharCodes(
+    response.bodyBytes.take(20)
+  )
+);
+            final bytes = response.bodyBytes;
+            final dir =
+                await getApplicationDocumentsDirectory();
+            final file = File(
+              '${dir.path}/invoice_${order.idSales}.pdf'
+            );
+            await file.writeAsBytes(
+              bytes,
+              flush:true
+            );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    PDFViewPage(
+                      path:file.path
+                    ),
+              ),
+            );
+          }
+          else {
+            print(response.body);
+            ScaffoldMessenger.of(context)
+                .showSnackBar(
+              const SnackBar(
+                content:
+                Text(
+                  'PDF gagal dibuat'
+                ),
+              ),
+            );
+          }
+        }
+
+        catch(e){
+          print(e);
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+            SnackBar(
+              content:
+              Text(
+                'Error : $e'
+              ),
+            ),
+          );
+        }
+      },
+      icon: const Icon(
+        Icons.picture_as_pdf,
+        color:Colors.white
+      ),
+      label: const Text(
+        "Lihat Invoice",
+        style: TextStyle(
+          fontSize:16,
+          fontWeight:FontWeight.w600,
+          color:Colors.white
         ),
       ),
-    );
-  }
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+          AppTheme.primary,
+        padding:
+          const EdgeInsets.symmetric(
+            vertical:16
+          ),
+        shape:
+          RoundedRectangleBorder(
+            borderRadius:
+            BorderRadius.circular(12),
+          ),
+      ),
+    ),
+  );
+}
 
   static String _formatRupiah(int value) {
     final text = value.toString();

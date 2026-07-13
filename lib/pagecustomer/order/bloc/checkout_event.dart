@@ -7,5 +7,6 @@ sealed class CheckoutEvent with _$CheckoutEvent {
     required String userName,
     required String userAddress,
     required String userPhone,
+    required String paymentType,
   }) = CheckoutRequested;
 }

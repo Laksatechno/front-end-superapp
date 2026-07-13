@@ -20,6 +20,7 @@ class CheckoutUserDataSource {
     required String userName,
     required String userAddress,
     required String userPhone,
+    required String paymentType,
   }) async {
     try {
       final authData = await _authLocalDatasource.getAuthData();
@@ -48,6 +49,7 @@ class CheckoutUserDataSource {
           'user_name': userName,
           'user_address': userAddress,
           'user_phone': userPhone,
+          'payment_type': paymentType
         }),
       );
 

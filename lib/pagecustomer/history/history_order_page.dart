@@ -5,6 +5,7 @@ import 'package:yofa/pagecustomer/history/datasource/history_order_ds.dart';
 import 'package:yofa/pagecustomer/history/model/history_order_model.dart';
 import 'package:yofa/pagecustomer/history/history_order_detail_page.dart';
 import 'package:yofa/pagecustomer/order/checkout_page.dart';
+import 'package:yofa/pagecustomer/shipment/shipment_tracking_page.dart';
 import 'package:yofa/theme/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -709,6 +710,147 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          //pengiriman jika ada
+          if (order.shipment != null)
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ShipmentTrackingPage(
+                      order: order,
+                    ),
+                  ),
+                );
+
+              },
+              child: Container(
+
+                padding: const EdgeInsets.all(14),
+
+                decoration: BoxDecoration(
+
+                  color: Colors.blue.withOpacity(0.06),
+
+                  borderRadius:
+                      BorderRadius.circular(16),
+
+                  border: Border.all(
+                    color: Colors.blue.withOpacity(0.15),
+                  ),
+
+                ),
+
+
+                child: Row(
+
+                  children: [
+
+                    Container(
+
+                      width:42,
+                      height:42,
+
+                      decoration:BoxDecoration(
+
+                        color:Colors.blue.withOpacity(0.12),
+
+                        borderRadius:
+                          BorderRadius.circular(14),
+
+                      ),
+
+                      child: const Icon(
+                        Icons.local_shipping_outlined,
+                        color:Colors.blue,
+                      ),
+
+                    ),
+
+
+                    const SizedBox(width:12),
+
+
+                    Expanded(
+
+                      child:Column(
+
+                        crossAxisAlignment:
+                          CrossAxisAlignment.start,
+
+                        children:[
+
+
+                          const Text(
+                            "Pengiriman",
+                            style:TextStyle(
+                              fontSize:12,
+                              color:AppTheme.textMuted,
+                            ),
+                          ),
+
+
+                          const SizedBox(height:4),
+
+
+                          Text(
+
+                            order.shipment!
+                                .statuses
+                                .isNotEmpty
+
+                              ? order.shipment!
+                                .statuses
+                                .last
+                                .status
+
+                              : "Menunggu pengiriman",
+
+                            maxLines:2,
+
+                            overflow:
+                              TextOverflow.ellipsis,
+
+                            style:const TextStyle(
+
+                              fontSize:13,
+
+                              fontWeight:
+                                FontWeight.w700,
+
+                              color:
+                                AppTheme.textDark,
+
+                            ),
+
+                          ),
+
+
+                        ],
+
+                      ),
+
+                    ),
+
+
+                    const Icon(
+                      Icons.chevron_right,
+                      color:Colors.grey,
+                    )
+
+
+                  ],
+
+                ),
+
+              ),
+
+            ),
+
+
           const SizedBox(height: 12),
           Row(
             children: [

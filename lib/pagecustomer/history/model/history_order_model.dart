@@ -1,4 +1,9 @@
+import 'dart:ffi';
+
+import 'package:yofa/core/constants/variables.dart';
+
 class CustomerOrderHistory {
+  final int idSales;
   final String invoice;
   final String date;
   final String status;
@@ -7,8 +12,10 @@ class CustomerOrderHistory {
   final String paymentStatus;
   final List<String> items;
   final List<Map<String, dynamic>> details;
+  final Shipment? shipment;
 
   CustomerOrderHistory({
+    required this.idSales,
     required this.invoice,
     required this.date,
     required this.status,
@@ -17,6 +24,7 @@ class CustomerOrderHistory {
     required this.paymentStatus,
     required this.items,
     required this.details,
+    this.shipment,
   });
 
   factory CustomerOrderHistory.fromJson(Map<String, dynamic> json) {
@@ -36,9 +44,13 @@ class CustomerOrderHistory {
     final status = _mapStatus(json['status'] as String? ?? 'pending');
     final paymentStatus = _mapPaymentStatus(json['status'] as String? ?? 'pending');
     final date = json['tanggal'] != null ? _formatDate(json['tanggal'] as String) : 'Tanggal Tidak Dikenal';
+    final shipment = json['shipment'] != null
+    ? Shipment.fromJson(json['shipment'])
+    : null;
 
     return CustomerOrderHistory(
       invoice: json['invoice_number'] as String? ?? 'Tidak Dikenal',
+      idSales: json['id'] as int? ?? 0,
       date: date,
       status: status,
       total: total,
@@ -46,6 +58,7 @@ class CustomerOrderHistory {
       paymentStatus: paymentStatus,
       items: items,
       details: details,
+      shipment: shipment,
     );
   }
 
@@ -93,5 +106,61 @@ class CustomerOrderHistory {
     final month = months[int.parse(parts[1]) - 1];
     final year = parts[0];
     return '$day $month $year';
+  }
+}
+
+class Shipment {
+  final int id;
+  final String? deliveryDate;
+  final String? arrivalDate;
+  final String? photoProof;
+  final List<ShipmentStatus> statuses;
+
+  Shipment({
+    required this.id,
+    this.deliveryDate,
+    this.arrivalDate,
+    this.photoProof,
+    required this.statuses,
+  });
+
+
+  factory Shipment.fromJson(Map<String, dynamic> json) {
+    return Shipment(
+      id: json['id'] ?? 0,
+      deliveryDate: json['delivery_date'],
+      arrivalDate: json['arrival_date'],
+      photoProof:
+      json['photo_proof'] != null
+      ?
+      Variables.storageUrl+'/shipment_photos/' + json['photo_proof']
+      :
+      null ?? '',
+      statuses: (json['statuses'] as List<dynamic>? ?? [])
+          .map((e) => ShipmentStatus.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+
+class ShipmentStatus {
+
+  final String status;
+  final String timestamp;
+
+
+  ShipmentStatus({
+    required this.status,
+    required this.timestamp,
+  });
+
+
+  factory ShipmentStatus.fromJson(Map<String,dynamic> json){
+
+    return ShipmentStatus(
+      status: json['status'] ?? '',
+      timestamp: json['timestamp'] ?? '',
+    );
   }
 }

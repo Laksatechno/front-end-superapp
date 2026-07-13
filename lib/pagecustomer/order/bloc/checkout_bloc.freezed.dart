@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CheckoutEvent {
 
- List<Map<String, dynamic>> get items; String get userName; String get userAddress; String get userPhone;
+ List<Map<String, dynamic>> get items; String get userName; String get userAddress; String get userPhone; String get paymentType;
 /// Create a copy of CheckoutEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CheckoutEventCopyWith<CheckoutEvent> get copyWith => _$CheckoutEventCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutEvent&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.userName, userName) || other.userName == userName)&&(identical(other.userAddress, userAddress) || other.userAddress == userAddress)&&(identical(other.userPhone, userPhone) || other.userPhone == userPhone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutEvent&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.userName, userName) || other.userName == userName)&&(identical(other.userAddress, userAddress) || other.userAddress == userAddress)&&(identical(other.userPhone, userPhone) || other.userPhone == userPhone)&&(identical(other.paymentType, paymentType) || other.paymentType == paymentType));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),userName,userAddress,userPhone);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),userName,userAddress,userPhone,paymentType);
 
 @override
 String toString() {
-  return 'CheckoutEvent(items: $items, userName: $userName, userAddress: $userAddress, userPhone: $userPhone)';
+  return 'CheckoutEvent(items: $items, userName: $userName, userAddress: $userAddress, userPhone: $userPhone, paymentType: $paymentType)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CheckoutEventCopyWith<$Res>  {
   factory $CheckoutEventCopyWith(CheckoutEvent value, $Res Function(CheckoutEvent) _then) = _$CheckoutEventCopyWithImpl;
 @useResult
 $Res call({
- List<Map<String, dynamic>> items, String userName, String userAddress, String userPhone
+ List<Map<String, dynamic>> items, String userName, String userAddress, String userPhone, String paymentType
 });
 
 
@@ -62,12 +62,13 @@ class _$CheckoutEventCopyWithImpl<$Res>
 
 /// Create a copy of CheckoutEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? userName = null,Object? userAddress = null,Object? userPhone = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? userName = null,Object? userAddress = null,Object? userPhone = null,Object? paymentType = null,}) {
   return _then(_self.copyWith(
 items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>,userName: null == userName ? _self.userName : userName // ignore: cast_nullable_to_non_nullable
 as String,userAddress: null == userAddress ? _self.userAddress : userAddress // ignore: cast_nullable_to_non_nullable
 as String,userPhone: null == userPhone ? _self.userPhone : userPhone // ignore: cast_nullable_to_non_nullable
+as String,paymentType: null == paymentType ? _self.paymentType : paymentType // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -150,10 +151,10 @@ return checkoutRequested(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone)?  checkoutRequested,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone,  String paymentType)?  checkoutRequested,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CheckoutRequested() when checkoutRequested != null:
-return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone);case _:
+return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone,_that.paymentType);case _:
   return orElse();
 
 }
@@ -171,10 +172,10 @@ return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.user
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone)  checkoutRequested,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone,  String paymentType)  checkoutRequested,}) {final _that = this;
 switch (_that) {
 case CheckoutRequested():
-return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone);}
+return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone,_that.paymentType);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -188,10 +189,10 @@ return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.user
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone)?  checkoutRequested,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<Map<String, dynamic>> items,  String userName,  String userAddress,  String userPhone,  String paymentType)?  checkoutRequested,}) {final _that = this;
 switch (_that) {
 case CheckoutRequested() when checkoutRequested != null:
-return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone);case _:
+return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.userPhone,_that.paymentType);case _:
   return null;
 
 }
@@ -203,7 +204,7 @@ return checkoutRequested(_that.items,_that.userName,_that.userAddress,_that.user
 
 
 class CheckoutRequested implements CheckoutEvent {
-  const CheckoutRequested({required final  List<Map<String, dynamic>> items, required this.userName, required this.userAddress, required this.userPhone}): _items = items;
+  const CheckoutRequested({required final  List<Map<String, dynamic>> items, required this.userName, required this.userAddress, required this.userPhone, required this.paymentType}): _items = items;
   
 
  final  List<Map<String, dynamic>> _items;
@@ -216,6 +217,7 @@ class CheckoutRequested implements CheckoutEvent {
 @override final  String userName;
 @override final  String userAddress;
 @override final  String userPhone;
+@override final  String paymentType;
 
 /// Create a copy of CheckoutEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ $CheckoutRequestedCopyWith<CheckoutRequested> get copyWith => _$CheckoutRequeste
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutRequested&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.userName, userName) || other.userName == userName)&&(identical(other.userAddress, userAddress) || other.userAddress == userAddress)&&(identical(other.userPhone, userPhone) || other.userPhone == userPhone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutRequested&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.userName, userName) || other.userName == userName)&&(identical(other.userAddress, userAddress) || other.userAddress == userAddress)&&(identical(other.userPhone, userPhone) || other.userPhone == userPhone)&&(identical(other.paymentType, paymentType) || other.paymentType == paymentType));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),userName,userAddress,userPhone);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),userName,userAddress,userPhone,paymentType);
 
 @override
 String toString() {
-  return 'CheckoutEvent.checkoutRequested(items: $items, userName: $userName, userAddress: $userAddress, userPhone: $userPhone)';
+  return 'CheckoutEvent.checkoutRequested(items: $items, userName: $userName, userAddress: $userAddress, userPhone: $userPhone, paymentType: $paymentType)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class $CheckoutRequestedCopyWith<$Res> implements $CheckoutEventC
   factory $CheckoutRequestedCopyWith(CheckoutRequested value, $Res Function(CheckoutRequested) _then) = _$CheckoutRequestedCopyWithImpl;
 @override @useResult
 $Res call({
- List<Map<String, dynamic>> items, String userName, String userAddress, String userPhone
+ List<Map<String, dynamic>> items, String userName, String userAddress, String userPhone, String paymentType
 });
 
 
@@ -264,12 +266,13 @@ class _$CheckoutRequestedCopyWithImpl<$Res>
 
 /// Create a copy of CheckoutEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? userName = null,Object? userAddress = null,Object? userPhone = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? userName = null,Object? userAddress = null,Object? userPhone = null,Object? paymentType = null,}) {
   return _then(CheckoutRequested(
 items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>,userName: null == userName ? _self.userName : userName // ignore: cast_nullable_to_non_nullable
 as String,userAddress: null == userAddress ? _self.userAddress : userAddress // ignore: cast_nullable_to_non_nullable
 as String,userPhone: null == userPhone ? _self.userPhone : userPhone // ignore: cast_nullable_to_non_nullable
+as String,paymentType: null == paymentType ? _self.paymentType : paymentType // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

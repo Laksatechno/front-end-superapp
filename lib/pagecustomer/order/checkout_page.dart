@@ -11,7 +11,7 @@ import 'package:yofa/pagecustomer/order/orderedsuccess_page.dart';
 import 'package:yofa/theme/app_theme.dart';
 
 
-class CheckoutPage extends StatelessWidget {
+class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> items;
 
   const CheckoutPage({
@@ -19,11 +19,24 @@ class CheckoutPage extends StatelessWidget {
     required this.items,
   });
 
+  @override
+  State<CheckoutPage> createState() => _CheckoutPageState();
+}
+
+class _CheckoutPageState extends State<CheckoutPage> {
+  late final Future<AuthResponseModel?> _authFuture;
+  String paymentType = 'cash';
+
+  @override
+  void initState() {
+    super.initState();
+    _authFuture = AuthLocalDatasource().getAuthData();
+  }
 
   int get subtotal {
     int total = 0;
 
-    for (final item in items) {
+    for (final item in widget.items) {
       final price = int.tryParse(
             item['price'].toString(),
           ) ??
@@ -101,16 +114,9 @@ int get grandTotal => subtotal;
 
 
         child: FutureBuilder<AuthResponseModel?>(
-
-          future: AuthLocalDatasource().getAuthData(),
-
-
+          future: _authFuture,
           builder: (context, snapshot) {
-
-
             final auth = snapshot.data;
-
-
             final userName =
                 auth?.employee?.employeesName
                             ?.trim()
@@ -123,9 +129,6 @@ int get grandTotal => subtotal;
                             true
                         ? auth!.user!.name!
                         : 'Nama Pengguna';
-
-
-
             final userAddress =
                 auth?.user?.address
                             ?.trim()
@@ -133,9 +136,6 @@ int get grandTotal => subtotal;
                         true
                     ? auth!.user!.address!
                     : 'Alamat belum tersedia';
-
-
-
             final userPhone =
                 auth?.user?.noHp
                             ?.trim()
@@ -143,9 +143,6 @@ int get grandTotal => subtotal;
                         true
                     ? auth!.user!.noHp!
                     : 'Nomor Telepon belum tersedia';
-
-
-
             if (snapshot.connectionState ==
                 ConnectionState.waiting) {
 
@@ -156,16 +153,9 @@ int get grandTotal => subtotal;
               );
 
             }
-
-
-
             return Scaffold(
-
               backgroundColor: AppTheme.bg,
-
-
               appBar: AppBar(
-
                 backgroundColor: AppTheme.primary,
 
                 foregroundColor: Colors.white,
@@ -188,6 +178,7 @@ int get grandTotal => subtotal;
                 userName,
                 userAddress,
                 userPhone,
+                paymentType,
               ),
 
 
@@ -197,6 +188,7 @@ int get grandTotal => subtotal;
                     userName,
                     userAddress,
                     userPhone,
+                    paymentType,
                   ),
 
             );
@@ -216,6 +208,7 @@ int get grandTotal => subtotal;
     String userName,
     String userAddress,
     String userPhone,
+    String paymentType
   ) {
 
     return SingleChildScrollView(
@@ -612,7 +605,7 @@ int get grandTotal => subtotal;
 
                     Text(
 
-                      '${items.length} Item',
+                      '${widget.items.length} Item',
 
                       style:
                           const TextStyle(
@@ -636,7 +629,7 @@ int get grandTotal => subtotal;
 
 
 
-                if (items.isEmpty)
+                if (widget.items.isEmpty)
 
                   const Text(
 
@@ -656,7 +649,7 @@ int get grandTotal => subtotal;
                 else
 
 
-                  ...items.map(
+                  ...widget.items.map(
                     (item) {
 
                       final image =
@@ -813,36 +806,21 @@ int get grandTotal => subtotal;
 
 
                             Text(
-
                               'x$qty',
-
                               style:
                                   const TextStyle(
-
                                 fontWeight:
                                     FontWeight.bold,
 
                                 color:
                                     AppTheme.textDark,
-
                               ),
-
                             ),
-
-
                           ],
-
                         ),
-
                       );
-
-
                     },
-
                   ).toList(),
-
-
-
               ],
 
             ),
@@ -859,6 +837,11 @@ int get grandTotal => subtotal;
 
           _buildPaymentSummary(),
 
+          const SizedBox(
+            height: 18,
+          ),
+          _buildPaymentType(),
+
 
         ],
 
@@ -866,6 +849,114 @@ int get grandTotal => subtotal;
 
     );
 
+  }
+
+
+  Widget _buildPaymentType() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Metode Pembayaran',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDark,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      paymentType = 'cash';
+                    });
+                  },
+                  child: _paymentCard(
+                    title: 'Cash on Delivery',
+                    value: 'cash',
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      paymentType = '1';
+                    });
+                  },
+                  child: _paymentCard(
+                    title: 'Tempo 1 Bulan',
+                    value: '1',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _paymentCard({
+    required String title,
+    required String value,
+  }) {
+    bool selected = paymentType == value;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppTheme.primary.withOpacity(0.08)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected
+              ? AppTheme.primary
+              : AppTheme.border,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Radio<String>(
+            value: value,
+            groupValue: paymentType,
+            activeColor: AppTheme.primary,
+            onChanged: (value) {
+              setState(() {
+                paymentType = value!;
+              });
+            },
+          ),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
     Widget _buildPaymentSummary() {
@@ -1022,6 +1113,8 @@ int get grandTotal => subtotal;
 
     String userPhone,
 
+    String paymentType,
+
   ) {
 
 
@@ -1140,7 +1233,7 @@ int get grandTotal => subtotal;
               onPressed: () {
 
 
-                if (items.isEmpty) {
+                if (widget.items.isEmpty) {
 
                   ScaffoldMessenger.of(
                     context,
@@ -1164,13 +1257,15 @@ int get grandTotal => subtotal;
 
 
 
-                final checkoutItems = items.map((item) {
+                final checkoutItems = widget.items.map((item) {
                   return {
                     "product_id": item['product_id'],
                     "quantity": item['qty'],
                     "price": item['price'],
                   };
                 }).toList();
+
+                print("payment type: $paymentType" );
 
 
                 context
@@ -1181,10 +1276,9 @@ int get grandTotal => subtotal;
                         userName: userName,
                         userAddress: userAddress,
                         userPhone: userPhone,
+                        paymentType: paymentType,
                       ),
                     );
-
-
               },
 
 
@@ -1491,3 +1585,4 @@ int get grandTotal => subtotal;
   }
 
 }
+

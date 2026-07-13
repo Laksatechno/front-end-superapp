@@ -6,6 +6,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:yofa/core/constants/variables.dart';
+import 'package:yofa/datasources/auth/auth_local_datasource.dart';
 import 'package:yofa/pageadmin/sales/order/bloc/sale_detail_bloc.dart';
 import 'package:yofa/pageadmin/sales/order/datasource/save_sale_ds.dart';
 import 'package:yofa/pageadmin/sales/order/edit_order.dart';
@@ -228,7 +229,7 @@ class _TagihanSalesState extends State<TagihanSales> {
     if (act == _InvoiceAction.print) {
       final id = s.id; // pastikan ada id
       final baseUrl = Variables.baseUrl;
-
+ 
       /// jika PPN → langsung print versi 1
       if (s.taxStatus.toLowerCase() == 'ppn') {
         final url = '$baseUrl/sales/print/$id';
@@ -266,15 +267,17 @@ class _TagihanSalesState extends State<TagihanSales> {
 
       await openPdfFromUrl(context, url);
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label: ${s.invoiceNumber} (TODO)')),
-    );
   }
 
   Future<void> openPdfFromUrl(BuildContext context, String url) async {
+      final authData = await AuthLocalDatasource().getAuthData();
+      final token = authData?.token;
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url),
+      headers: {
+        "Accept": "application/pdf",
+        "Authorization":"Bearer $token",
+      });
 
       if (response.statusCode == 200) {
         final dir = await getTemporaryDirectory();
