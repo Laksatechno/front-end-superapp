@@ -41,11 +41,11 @@ class AppBottomNavCustomer extends StatelessWidget {
             activeIcon: Icon(Icons.history_outlined),
             label: 'Pesanan',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_outlined),
-            activeIcon: Icon(Icons.chat_rounded),
-            label: 'Chat',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.chat_outlined),
+          //   activeIcon: Icon(Icons.chat_rounded),
+          //   label: 'Chat',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),

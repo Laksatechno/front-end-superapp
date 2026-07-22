@@ -20,7 +20,7 @@ class _AppShellCustomerState extends State<AppShellCustomer> {
 
   final _home = const HomeCustomerPage();
   final _pesanan = const HistoryCustomerOrderPage();
-  final _chat = const ChatPage();
+  // final _chat = const ChatPage();
   final _profil = const ProfilPage();
 
 
@@ -32,7 +32,7 @@ class _AppShellCustomerState extends State<AppShellCustomer> {
         children: [
           _home,
           _pesanan,
-          _chat,
+          // _chat,
           _profil,
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yofa/about/about_page.dart';
 import 'package:yofa/bloc/logout/logout_bloc.dart';
 import 'package:yofa/core/extensions/build_context.ext.dart';
 import 'package:yofa/datasources/auth/auth_local_datasource.dart';
@@ -271,8 +272,10 @@ class _ProfilPageState extends State<ProfilPage> {
                   title: 'About',
                   subtitle: 'Tentang Aplikasi',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('About Coming soon')),
+                    // AboutPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutPage()),
                     );
                   },
                 ),

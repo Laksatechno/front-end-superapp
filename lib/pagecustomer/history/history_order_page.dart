@@ -582,7 +582,7 @@ class _OrderCard extends StatelessWidget {
   });
 
   Color get _statusColor {
-    switch (order.status) {
+    switch (order.orderStatus) {
       case 'Selesai':
         return Colors.green;
       case 'Dikirim':
@@ -599,7 +599,7 @@ class _OrderCard extends StatelessWidget {
   }
 
   IconData get _statusIcon {
-    switch (order.status) {
+    switch (order.orderStatus) {
       case 'Selesai':
         return Icons.check_circle_rounded;
       case 'Dikirim':
@@ -676,7 +676,7 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               _StatusBadge(
-                text: order.status,
+                text: order.orderStatus,
                 color: _statusColor,
               ),
             ],

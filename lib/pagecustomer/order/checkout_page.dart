@@ -887,7 +887,7 @@ int get grandTotal => subtotal;
                     });
                   },
                   child: _paymentCard(
-                    title: 'Cash on Delivery',
+                    title: 'Cash',
                     value: 'cash',
                   ),
                 ),

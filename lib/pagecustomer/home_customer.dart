@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:yofa/datasources/auth/auth_local_datasource.dart';
 import 'package:yofa/models/response/auth_response_model.dart';
-import 'package:yofa/page/brosur/brosur_page.dart';
+import 'package:yofa/pagecustomer/brosur/brosur_page.dart';
 import 'package:yofa/page/notification/notification_page.dart';
 import 'package:yofa/page/profile/profile_page.dart';
-import 'package:yofa/pageadmin/karyawanku/kelolalat/screens/alat_page.dart';
 import 'package:yofa/pagecustomer/order/order_page.dart';
-import 'package:yofa/pagecustomer/shipping/shipping_customer_page.dart';
+import 'package:yofa/pagecustomer/scan/scan_page.dart';
+import 'package:yofa/pagecustomer/summary_home/bloc/summary_bloc.dart';
+import 'package:yofa/pagecustomer/summary_home/datasource/summary_datasource.dart';
+import 'package:yofa/pagecustomer/tagihan/tagihan_page.dart';
 import '../../theme/app_theme.dart';
 
 class HomeCustomerPage extends StatefulWidget {
@@ -232,11 +235,11 @@ Widget _menuGrid() {
     ),
 
 
-    _MenuItemData(
-      'Pengiriman',
-      Icons.local_shipping_outlined,
-      subtitle: 'Cek status kirim',
-    ),
+    // _MenuItemData(
+    //   'Pengiriman',
+    //   Icons.local_shipping_outlined,
+    //   subtitle: 'Cek status kirim',
+    // ),
 
 
     _MenuItemData(
@@ -310,16 +313,16 @@ Widget _menuGrid() {
           }
 
 
-          if (it.label == 'Pengiriman') {
+          // if (it.label == 'Pengiriman') {
 
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PengirimanPage(),
-              ),
-            );
+          //   Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (_) => const PengirimanPage(),
+          //     ),
+          //   );
 
-          }
+          // }
 
 
           if (it.label == 'Brosur') {
@@ -335,15 +338,10 @@ Widget _menuGrid() {
 
           if (it.label == 'Tagihan') {
 
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (_) => const TagihanPage(),
-            //   ),
-            // );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fitur Tagihan akan segera hadir.'),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TagihanPage(),
               ),
             );
           }
@@ -511,134 +509,187 @@ Widget _menuGrid() {
   );
 
 }
-  Widget _statGrid() {
-    final stats = [
-      _StatData('Total Order', '0', Icons.receipt_long_rounded, true),
-      _StatData('Pengiriman', '0', Icons.local_shipping_rounded, false),
-    ];
+Widget _statGrid() {
 
-    return GridView.builder(
-      itemCount: stats.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 2.3,
+  return BlocBuilder<SummaryBloc, SummaryState>(
+    builder: (context, state) {
+      String totalOrder = '0';
+      String totalTagihan = 'Rp 0';
+      if (state is SummaryLoading) {
+        totalOrder = '...';
+        totalTagihan = '...';
+      } else if (state is SummaryLoaded) {
+        totalOrder = state.summary.totalOrder.toString();
+        totalTagihan = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        ).format(
+          state.summary.totalTagihan,
+        );
+      } else if (state is SummaryError) {
+        totalOrder = '-';
+        totalTagihan = '-';
+      }
+
+
+
+      final stats = [
+
+        _StatData(
+          'Total Order',
+          totalOrder,
+          Icons.receipt_long_rounded,
+          true,
+        ),
+
+        _StatData(
+          'Tagihan',
+          totalTagihan,
+          Icons.local_shipping_rounded,
+          false,
+        ),
+
+      ];
+      return GridView.builder(
+        itemCount: stats.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.3,
+        ),
+        itemBuilder: (context, i) {
+          final s = stats[i];
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0,4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: s.highlight
+                        ? AppTheme.primary
+                        : const Color(0xFFF4ECF2),
+                    borderRadius:
+                        BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    s.icon,
+                    color: s.highlight
+                        ? Colors.white
+                        : AppTheme.primary,
+                    size: 20,
+                  ),
+
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        s.value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF7C6F77),
+                          fontSize: 12,
+                        ),
+                        overflow:
+                            TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+          );
+
+        },
+
+      );
+
+    },
+
+  );
+
+}
+@override
+Widget build(BuildContext context) {
+    return BlocProvider(
+
+    create: (_) => SummaryBloc(
+      SummaryDatasource(),
+    )..add(
+        const SummaryEvent.load(),
       ),
-      itemBuilder: (context, i) {
-        final s = stats[i];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
+      child: Scaffold(
+        backgroundColor: AppTheme.bg,
 
-              BoxShadow(
+        body: Column(
+          children: [
 
-                color: Colors.black.withOpacity(0.05),
+            _topAppBar(),
 
-                blurRadius: 12,
-
-                offset: const Offset(0,4),
-
-              ),
-
-            ],
-
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: s.highlight
-                      ? AppTheme.primary
-                      : const Color(0xFFF4ECF2),
-                  borderRadius: BorderRadius.circular(12),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
-                child: Icon(
-                  s.icon,
-                  color: s.highlight ? Colors.white : AppTheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
+
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+
                   children: [
-                    Text(
-                      s.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      s.value,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF7C6F77),
-                        fontSize: 12,
-                      ),
-                    ),
+
+                    _profileCard(),
+
+                    // const SizedBox(height: 8),
+
+                    _menuGrid(),
+
+                    // const SizedBox(height: 8),
+
+                    _statGrid(),
+
                   ],
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: AppTheme.bg,
-
-    body: Column(
-      children: [
-
-        _topAppBar(),
-
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
             ),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-
-              children: [
-
-                _profileCard(),
-
-                // const SizedBox(height: 8),
-
-                _menuGrid(),
-
-                // const SizedBox(height: 8),
-
-                _statGrid(),
-
-              ],
-            ),
-          ),
+          ],
         ),
-
-      ],
-    ),
-  );
-}
+      ),
+    );
+  } 
 }
 
 class _MenuItemData {

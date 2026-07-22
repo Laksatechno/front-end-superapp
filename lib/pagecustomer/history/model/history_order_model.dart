@@ -9,6 +9,7 @@ class CustomerOrderHistory {
   final String status;
   final int total;
   final int itemCount;
+  final String orderStatus;
   final String paymentStatus;
   final List<String> items;
   final List<Map<String, dynamic>> details;
@@ -21,6 +22,7 @@ class CustomerOrderHistory {
     required this.status,
     required this.total,
     required this.itemCount,
+    required this.orderStatus,
     required this.paymentStatus,
     required this.items,
     required this.details,
@@ -42,6 +44,7 @@ class CustomerOrderHistory {
     
     final total = json['total'] as int? ?? 0;
     final status = _mapStatus(json['status'] as String? ?? 'pending');
+    final orderStatus = _mapOrderStatus(json['order_status'] as String? ?? 'menunggu');
     final paymentStatus = _mapPaymentStatus(json['status'] as String? ?? 'pending');
     final date = json['tanggal'] != null ? _formatDate(json['tanggal'] as String) : 'Tanggal Tidak Dikenal';
     final shipment = json['shipment'] != null
@@ -55,12 +58,33 @@ class CustomerOrderHistory {
       status: status,
       total: total,
       itemCount: items.length,
+      orderStatus: orderStatus,
       paymentStatus: paymentStatus,
       items: items,
       details: details,
       shipment: shipment,
     );
   }
+
+  static String _mapOrderStatus(String orderStatus) {
+    switch (orderStatus.toLowerCase()) {
+      case 'menunggu':
+        return 'Menunggu ';
+      case 'diproses':
+        return 'Diproses';
+        case 'dikirim':
+        return 'Dikirim';
+      case 'selesai':
+        return 'Selesai';
+      case 'dibatalkan':
+        return 'Dibatalkan';
+      default:
+        return 'Menunggu ';
+    }
+  }
+
+
+
 
   static String _mapStatus(String status) {
     switch (status.toLowerCase()) {
@@ -82,7 +106,7 @@ class CustomerOrderHistory {
   static String _mapPaymentStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Menunggu Pembayaran';
+        return 'Menunggu';
       case 'processing':
         return 'Belum Lunas';
       case 'shipped':
@@ -92,7 +116,7 @@ class CustomerOrderHistory {
       case 'cancelled':
         return 'Dibatalkan';
       default:
-        return 'Menunggu Pembayaran';
+        return 'Menunggu';
     }
   }
 

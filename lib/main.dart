@@ -34,8 +34,11 @@ import 'package:yofa/pageadmin/sales/tagihansales/datasource/sales_ds.dart';
 import 'package:yofa/pageadmin/sales/tagihansales/tagihan_sales.dart';
 import 'package:yofa/pagecustomer/history/bloc/history_order_bloc.dart';
 import 'package:yofa/pagecustomer/history/datasource/history_order_ds.dart';
+import 'package:yofa/pagecustomer/home_customer.dart';
 import 'package:yofa/pagecustomer/product/bloc/productuser_bloc.dart';
 import 'package:yofa/pagecustomer/product/datasource/productuser_ds.dart';
+import 'package:yofa/pagecustomer/summary_home/bloc/summary_bloc.dart';
+import 'package:yofa/pagecustomer/summary_home/datasource/summary_datasource.dart';
 
 import 'pageadmin/sales/products/datasource/product_ds.dart';
 
@@ -113,6 +116,17 @@ class MyApp extends StatelessWidget {
             ..add(const RiwayatEvent.getRiwayats()),
         ),
         BlocProvider(create: (_) => HistoryOrderBloc(HistoryOrderDataSource())),
+        BlocProvider(
+          create: (_) => SummaryBloc(
+            SummaryDatasource(),
+          )..add(
+              const SummaryEvent.load(),
+            ),
+
+          child: const HomeCustomerPage(),
+
+        ),
+
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

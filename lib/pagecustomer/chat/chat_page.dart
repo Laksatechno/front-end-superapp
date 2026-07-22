@@ -1,7 +1,32 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:yofa/theme/app_theme.dart';
+
+enum ChatRecipient {
+  ai,
+  admin,
+  marketing,
+  superadmin,
+}
+
+class ChatMessage {
+  final String message;
+  final bool isMe;
+  final String time;
+  final String role;
+  final String senderName;
+
+  const ChatMessage({
+    required this.message,
+    required this.isMe,
+    required this.time,
+    required this.role,
+    required this.senderName,
+  });
+}
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -14,31 +39,29 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'message':
-          'Halo Admin, saya ingin menanyakan status pesanan saya.',
-      'isMe': true,
-      'time': '09:12',
-    },
-    {
-      'message':
-          'Halo kak 👋\nBaik, mohon informasikan nomor pesanan nya ya.',
-      'isMe': false,
-      'time': '09:13',
-    },
-    {
-      'message': 'INVOICE 10024',
-      'isMe': true,
-      'time': '09:14',
-    },
-    {
-      'message':
-          'Baik kak, pesanan sedang diproses pengiriman 😊',
-      'isMe': false,
-      'time': '09:15',
-    },
-  ];
+  ChatRecipient _currentRecipient = ChatRecipient.ai;
+
+  bool _isSending = false;
+
+  // Untuk pengujian saja.
+  // Jalankan dengan:
+  // flutter run --dart-define=OPENAI_API_KEY=sk-xxxxx
+  static const String _aiApiKey = String.fromEnvironment(
+    'OPENAI_API_KEY',
+  );
+
+  static const String _aiBaseUrl = 'https://api.tokengo.com/v1';
+  static const String _aiModel = 'minimax/minimax-m2.5';
+
+final List<ChatMessage> _messages = [
+  const ChatMessage(
+    message: 'Halo! Saya adalah AI Customer Service. Ada yang bisa saya bantu?',
+    isMe: false,
+    time: '09:00',
+    role: 'ai',
+    senderName: 'AI Assistant',
+  ),
+];
 
   @override
   void dispose() {
@@ -47,41 +70,307 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String get _recipientName {
+    switch (_currentRecipient) {
+      case ChatRecipient.ai:
+        return 'AI Assistant';
+      case ChatRecipient.admin:
+        return 'Admin';
+      case ChatRecipient.marketing:
+        return 'Marketing';
+      case ChatRecipient.superadmin:
+        return 'Superadmin';
+    }
+  }
+
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
 
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending) return;
+
+    final userMessage = ChatMessage(
+      message: text,
+      isMe: true,
+      time: _formatTime(DateTime.now()),
+      role: 'customer',
+      senderName: 'Anda',
+    );
 
     setState(() {
-      _messages.add({
-        'message': text,
-        'isMe': true,
-        'time':
-            '${TimeOfDay.now().hour.toString().padLeft(2, '0')}:${TimeOfDay.now().minute.toString().padLeft(2, '0')}',
-      });
+      _messages.add(userMessage);
+      _isSending = true;
     });
 
     _messageController.clear();
+    _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 120), () {
+    try {
+      switch (_currentRecipient) {
+        case ChatRecipient.ai:
+          await _getAIResponse();
+          break;
+
+        case ChatRecipient.admin:
+        case ChatRecipient.marketing:
+        case ChatRecipient.superadmin:
+          _addTemporaryRoleResponse();
+          break;
+      }
+    } catch (error) {
+      _addSystemMessage(
+        'Maaf, terjadi kesalahan saat menghubungi AI.\n$error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+
+      _scrollToBottom();
+    }
+  }
+
+  Future<void> _getAIResponse() async {
+    // if (_aiApiKey.isEmpty) {
+    //   throw Exception(
+    //     'OPENAI_API_KEY belum diatur. Jalankan aplikasi menggunakan '
+    //     '--dart-define=OPENAI_API_KEY=API_KEY_ANDA',
+    //   );
+    // }
+
+    final inputMessages = _messages
+        .where((message) => message.role == 'customer' || message.role == 'ai')
+        .map(
+          (message) => {
+            'role': message.role == 'customer' ? 'user' : 'assistant',
+            'content': message.message,
+          },
+        )
+        .toList();
+
+    final response = await http.post(
+      Uri.parse('$_aiBaseUrl/chat/completions'),
+      headers: {
+        'Authorization': 'Bearer 3qghxhqx5TZdov44ye5eTpxOilUcXC4Kt1u0klWHrxwGCTbA',
+        'Content-Type': 'application/json',
+      },
+      // 'Authorization': 'Bearer $_aiApiKey
+      body: jsonEncode({
+        'model': _aiModel,
+        'instructions': '''
+Anda adalah AI Customer Service YOFA.
+
+Tugas Anda:
+1. Menjawab pertanyaan pelanggan dengan ramah dan ringkas.
+2. Gunakan bahasa Indonesia.
+3. Jangan mengarang status pesanan, harga, stok, atau promo.
+4. Jika data tidak tersedia, katakan bahwa informasi perlu diperiksa admin.
+5. Jika masalah membutuhkan manusia, arahkan pelanggan ke Admin.
+''',
+        'input': inputMessages,
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final errorMessage = _extractErrorMessage(response.body);
+
+      throw Exception(
+        '${response.statusCode}: $errorMessage',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final answer = _extractAIText(data);
+
+    if (answer.isEmpty) {
+      throw Exception('AI tidak mengembalikan jawaban.');
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          message: answer,
+          isMe: false,
+          time: _formatTime(DateTime.now()),
+          role: 'ai',
+          senderName: 'AI Assistant',
+        ),
+      );
+    });
+  }
+
+  String _extractAIText(Map<String, dynamic> data) {
+    final output = data['output'];
+
+    if (output is! List) return '';
+
+    final textParts = <String>[];
+
+    for (final outputItem in output) {
+      if (outputItem is! Map<String, dynamic>) continue;
+
+      final content = outputItem['content'];
+
+      if (content is! List) continue;
+
+      for (final contentItem in content) {
+        if (contentItem is! Map<String, dynamic>) continue;
+
+        if (contentItem['type'] == 'output_text' &&
+            contentItem['text'] is String) {
+          textParts.add(contentItem['text'] as String);
+        }
+      }
+    }
+
+    return textParts.join('\n').trim();
+  }
+
+  String _extractErrorMessage(String responseBody) {
+    try {
+      final data = jsonDecode(responseBody);
+
+      if (data is Map<String, dynamic>) {
+        final error = data['error'];
+
+        if (error is Map<String, dynamic> && error['message'] is String) {
+          return error['message'] as String;
+        }
+      }
+    } catch (_) {
+      // Gunakan response body asli apabila bukan JSON.
+    }
+
+    return responseBody;
+  }
+
+  void _addTemporaryRoleResponse() {
+    if (!mounted) return;
+
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          message:
+              'Pesan untuk $_recipientName sudah dicatat. '
+              'Fitur chat langsung dengan $_recipientName '
+              'akan dihubungkan ke backend pada tahap berikutnya.',
+          isMe: false,
+          time: _formatTime(DateTime.now()),
+          role: _currentRecipient.name,
+          senderName: _recipientName,
+        ),
+      );
+    });
+  }
+
+  void _addSystemMessage(String message) {
+    if (!mounted) return;
+
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          message: message,
+          isMe: false,
+          time: _formatTime(DateTime.now()),
+          role: 'system',
+          senderName: 'Sistem',
+        ),
+      );
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 120,
+        _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     });
   }
 
-  bool get _isDesktop => MediaQuery.of(context).size.width >= 1000;
+  void _showRecipientSelector() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ChatRecipient.values.map((recipient) {
+              final selected = recipient == _currentRecipient;
 
-  bool get _isTablet =>
-      MediaQuery.of(context).size.width >= 650 &&
-      MediaQuery.of(context).size.width < 1000;
+              return ListTile(
+                leading: Icon(
+                  _getRecipientIcon(recipient),
+                  color: selected ? AppTheme.primary : Colors.grey,
+                ),
+                title: Text(_getRecipientLabel(recipient)),
+                trailing: selected
+                    ? const Icon(
+                        Icons.check_circle,
+                        color: AppTheme.primary,
+                      )
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _currentRecipient = recipient;
+                  });
+
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getRecipientLabel(ChatRecipient recipient) {
+    switch (recipient) {
+      case ChatRecipient.ai:
+        return 'AI Assistant';
+      case ChatRecipient.admin:
+        return 'Admin';
+      case ChatRecipient.marketing:
+        return 'Marketing';
+      case ChatRecipient.superadmin:
+        return 'Superadmin';
+    }
+  }
+
+  IconData _getRecipientIcon(ChatRecipient recipient) {
+    switch (recipient) {
+      case ChatRecipient.ai:
+        return Icons.smart_toy_rounded;
+      case ChatRecipient.admin:
+        return Icons.support_agent_rounded;
+      case ChatRecipient.marketing:
+        return Icons.campaign_rounded;
+      case ChatRecipient.superadmin:
+        return Icons.admin_panel_settings_rounded;
+    }
+  }
+
+  bool get _isDesktop => MediaQuery.sizeOf(context).width >= 1000;
+
+  bool get _isTablet {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= 650 && width < 1000;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-
     double maxWidth = double.infinity;
 
     if (_isDesktop) {
@@ -96,62 +385,57 @@ class _ChatPageState extends State<ChatPage> {
         elevation: 0,
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
-        titleSpacing: 0,
+        titleSpacing: 16,
         title: Row(
           children: [
-            Hero(
-              tag: 'admin-avatar',
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.25),
-                      Colors.white.withOpacity(0.1),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
-                  ),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: Colors.white.withOpacity(0.15),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
                 ),
-                child: const Icon(
-                  Icons.support_agent_rounded,
-                  color: Colors.white,
-                ),
+              ),
+              child: Icon(
+                _getRecipientIcon(_currentRecipient),
+                color: Colors.white,
               ),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Admin Support',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+            Expanded(
+              child: InkWell(
+                onTap: _showRecipientSelector,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _recipientName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _currentRecipient == ChatRecipient.ai
+                          ? 'Online • Model: $_aiModel'
+                          : 'Pilih tujuan percakapan',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+              ),
+            ),
+            IconButton(
+              onPressed: _showRecipientSelector,
+              icon: const Icon(Icons.expand_more_rounded),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert_rounded),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Center(
@@ -176,8 +460,6 @@ class _ChatPageState extends State<ChatPage> {
                           ),
                         ),
                       ),
-
-                      /// blur bubble background
                       Positioned(
                         top: -50,
                         right: -40,
@@ -186,7 +468,6 @@ class _ChatPageState extends State<ChatPage> {
                           color: AppTheme.primary.withOpacity(0.08),
                         ),
                       ),
-
                       Positioned(
                         bottom: 50,
                         left: -50,
@@ -195,138 +476,106 @@ class _ChatPageState extends State<ChatPage> {
                           color: Colors.purple.withOpacity(0.06),
                         ),
                       ),
-
                       ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(
-                          16,
-                          18,
-                          16,
-                          20,
-                        ),
-                        itemCount: _messages.length,
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        itemCount: _messages.length + (_isSending ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final item = _messages[index];
+                          if (_isSending && index == _messages.length) {
+                            return const _TypingBubble();
+                          }
 
                           return _MessageBubble(
-                            message: item['message'],
-                            isMe: item['isMe'],
-                            time: item['time'],
+                            data: _messages[index],
                           );
                         },
                       ),
                     ],
                   ),
                 ),
-
-                /// INPUT
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    12,
-                    16,
-                    MediaQuery.of(context).padding.bottom + 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      top: BorderSide(
-                        color: AppTheme.border.withOpacity(0.7),
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 12,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.bg,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: AppTheme.border,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {},
-                                icon: const Icon(
-                                  Icons.add_circle_outline_rounded,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _messageController,
-                                  minLines: 1,
-                                  maxLines: 5,
-                                  textInputAction: TextInputAction.newline,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Tulis pesan...',
-                                    hintStyle: TextStyle(
-                                      color: AppTheme.hint,
-                                    ),
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: const Icon(
-                                  Icons.image_outlined,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      InkWell(
-                        onTap: _sendMessage,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Ink(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppTheme.primary,
-                                Color(0xFF7E3D82),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primary.withOpacity(0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.send_rounded,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildInput(),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInput() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.paddingOf(context).bottom + 10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.border.withOpacity(0.7),
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.bg,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: TextField(
+                controller: _messageController,
+                minLines: 1,
+                maxLines: 5,
+                enabled: !_isSending,
+                textInputAction: TextInputAction.newline,
+                decoration: const InputDecoration(
+                  hintText: 'Tulis pesan...',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          InkWell(
+            onTap: _isSending ? null : _sendMessage,
+            borderRadius: BorderRadius.circular(20),
+            child: Ink(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  colors: [
+                    AppTheme.primary,
+                    Color(0xFF7E3D82),
+                  ],
+                ),
+              ),
+              child: _isSending
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.send_rounded,
+                      color: AppTheme.primary,
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -337,10 +586,7 @@ class _ChatPageState extends State<ChatPage> {
   }) {
     return ClipOval(
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 20,
-          sigmaY: 20,
-        ),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: size,
           height: size,
@@ -355,96 +601,137 @@ class _ChatPageState extends State<ChatPage> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  final String message;
-  final bool isMe;
-  final String time;
+  final ChatMessage data;
 
   const _MessageBubble({
-    required this.message,
-    required this.isMe,
-    required this.time,
+    required this.data,
   });
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment:
-          isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: data.isMe
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 14),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth:
-                MediaQuery.of(context).size.width * 0.78,
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              14,
-              16,
-              10,
-            ),
-            decoration: BoxDecoration(
-              color: isMe ? AppTheme.primary : Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(22),
-                topRight: const Radius.circular(22),
-                bottomLeft: Radius.circular(isMe ? 22 : 6),
-                bottomRight: Radius.circular(isMe ? 6 : 22),
-              ),
-              border: Border.all(
-                color: isMe
-                    ? AppTheme.primary
-                    : AppTheme.border,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  message,
-                  style: TextStyle(
-                    height: 1.45,
-                    fontSize: 14,
-                    color: isMe
-                        ? Colors.white
-                        : AppTheme.textDark,
+        child: Column(
+          crossAxisAlignment: data.isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            if (!data.isMe)
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 4),
+                child: Text(
+                  data.senderName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primary,
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      time,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isMe
-                            ? Colors.white70
-                            : AppTheme.textMuted,
-                      ),
+              ),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.78,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                decoration: BoxDecoration(
+                  color: data.isMe ? AppTheme.primary : Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(22),
+                    topRight: const Radius.circular(22),
+                    bottomLeft: Radius.circular(data.isMe ? 22 : 6),
+                    bottomRight: Radius.circular(data.isMe ? 6 : 22),
+                  ),
+                  border: Border.all(
+                    color: data.isMe
+                        ? AppTheme.primary
+                        : AppTheme.border,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-
-                    if (isMe) ...[
-                      const SizedBox(width: 5),
-                      const Icon(
-                        Icons.done_all_rounded,
-                        size: 16,
-                        color: Colors.white70,
-                      ),
-                    ],
                   ],
                 ),
-              ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      data.message,
+                      style: TextStyle(
+                        height: 1.45,
+                        fontSize: 14,
+                        color: data.isMe
+                            ? Colors.white
+                            : AppTheme.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          data.time,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: data.isMe
+                                ? Colors.white70
+                                : AppTheme.textMuted,
+                          ),
+                        ),
+                        if (data.isMe) ...[
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.done_all_rounded,
+                            size: 16,
+                            color: Colors.white70,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(18)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 14,
+            ),
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppTheme.primary,
+              ),
             ),
           ),
         ),

@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:yofa/page/notification/bloc/notifikasi_bloc.dart';
+import 'package:yofa/page/notification/bloc/notifikasi_event.dart';
+import 'package:yofa/page/notification/bloc/notifikasi_state.dart';
+import 'package:yofa/page/notification/datasource/notifikasi_datasource.dart';
+import 'package:yofa/page/notification/model/notifikasi_model.dart';
 import 'package:yofa/theme/app_theme.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -11,127 +18,129 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   String selectedFilter = 'semua';
 
-  final List<NotificationItem> notifications = [
-    NotificationItem(
-      title: 'Pesanan Baru Dibuat',
-      body: 'Pesanan INVOICE 10025 berhasil dibuat dan sedang diproses.',
-      category: 'order',
-      time: '2 menit lalu',
-    ),
-    NotificationItem(
-      title: 'Status Pesanan Diperbarui',
-      body: 'Pesanan Anda telah masuk ke tahap pengiriman.',
-      category: 'order',
-      time: '15 menit lalu',
-    ),
-    NotificationItem(
-      title: 'Pengumuman Sistem',
-      body: 'Aplikasi akan mengalami maintenance pada malam ini pukul 22.00 WIB.',
-      category: 'pengumuman',
-      time: '1 jam lalu',
-    ),
-  ];
-
-  List<NotificationItem> get filteredNotifications {
-    if (selectedFilter == 'semua') return notifications;
-    return notifications
-        .where((item) => item.category == selectedFilter)
-        .toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bg,
-      appBar: AppBar(
-        title: const Text(
-          'Notification',
-          style: TextStyle(fontWeight: FontWeight.w700),
+    return BlocProvider(
+      create: (_) => NotifikasiBloc(
+        NotifikasiDataSource(),
+      )..add(const NotifikasiEvent.load()),
+      child: Scaffold(
+        backgroundColor: AppTheme.bg,
+        appBar: AppBar(
+          title: const Text(
+            'Notification',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppTheme.primary,
-          onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 900;
-              final maxWidth = isDesktop ? 820.0 : double.infinity;
+        body: BlocBuilder<NotifikasiBloc, NotifikasiState>(
+          builder: (context, state) {
+            return SafeArea(
+              child: RefreshIndicator(
+                color: AppTheme.primary,
+                onRefresh: () async {
+                  context.read<NotifikasiBloc>().add(const NotifikasiEvent.load());
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 900;
+                    final maxWidth = isDesktop ? 820.0 : double.infinity;
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxWidth),
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _HeaderSummary(total: filteredNotifications.length),
-                              const SizedBox(height: 16),
-                              _FilterSection(
-                                selectedFilter: selectedFilter,
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedFilter = value;
-                                  });
-                                },
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxWidth),
+                        child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    state.when(
+                                      initial: () => const _HeaderSummary(total: 0),
+                                      loading: () => const _HeaderSummary(total: 0),
+                                      loaded: (data) => _HeaderSummary(total: _filteredCount(data)),
+                                      error: (_) => const _HeaderSummary(total: 0),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _FilterSection(
+                                      selectedFilter: selectedFilter,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedFilter = value;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                            state.when(
+                              initial: () => const SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: _EmptyNotification(),
+                              ),
+                              loading: () => const SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                              loaded: (data) {
+                                final filtered = _applyFilter(data);
+                                if (filtered.isEmpty) {
+                                  return const SliverFillRemaining(
+                                    hasScrollBody: false,
+                                    child: _EmptyNotification(),
+                                  );
+                                }
+                                return SliverPadding(
+                                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                                  sliver: SliverList.separated(
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final item = filtered[index];
+                                      return _NotificationCard(item: item);
+                                    },
+                                  ),
+                                );
+                              },
+                              error: (message) => SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: _ErrorNotification(message: message),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-
-                      if (filteredNotifications.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _EmptyNotification(),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
-                          sliver: SliverList.separated(
-                            itemCount: filteredNotifications.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final item = filteredNotifications[index];
-                              return _NotificationCard(item: item);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
-}
 
-class NotificationItem {
-  final String title;
-  final String body;
-  final String category;
-  final String time;
+  List<NotifikasiModel> _applyFilter(List<NotifikasiModel> data) {
+    if (selectedFilter == 'semua') return data;
+    return data.where((item) => item.category == selectedFilter).toList();
+  }
 
-  NotificationItem({
-    required this.title,
-    required this.body,
-    required this.category,
-    required this.time,
-  });
+  int _filteredCount(List<NotifikasiModel> data) {
+    return _applyFilter(data).length;
+  }
 }
 
 class _HeaderSummary extends StatelessWidget {
@@ -303,12 +312,12 @@ class _FilterChipItem extends StatelessWidget {
 }
 
 class _NotificationCard extends StatelessWidget {
-  final NotificationItem item;
+  final NotifikasiModel item;
 
   const _NotificationCard({required this.item});
 
   IconData get icon {
-    switch (item.category) {
+    switch (item.category.toLowerCase()) {
       case 'order':
         return Icons.shopping_cart_checkout_rounded;
       case 'pengumuman':
@@ -319,7 +328,7 @@ class _NotificationCard extends StatelessWidget {
   }
 
   Color get iconColor {
-    switch (item.category) {
+    switch (item.category.toLowerCase()) {
       case 'order':
         return Colors.green;
       case 'pengumuman':
@@ -330,7 +339,7 @@ class _NotificationCard extends StatelessWidget {
   }
 
   String get categoryLabel {
-    switch (item.category) {
+    switch (item.category.toLowerCase()) {
       case 'order':
         return 'Order';
       case 'pengumuman':
@@ -338,6 +347,17 @@ class _NotificationCard extends StatelessWidget {
       default:
         return 'Notification';
     }
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    return DateFormat('dd MMM yyyy', 'id_ID').format(dateTime);
   }
 
   @override
@@ -385,21 +405,42 @@ class _NotificationCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          item.time,
+                          _formatTime(item.createdAt),
                           style: const TextStyle(
                             color: AppTheme.textMuted,
                             fontSize: 12,
                           ),
                         ),
+                        if (item.isRead == 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: iconColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Baru',
+                              style: TextStyle(
+                                color: iconColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.textDark,
                         fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: item.isRead == 0
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -459,6 +500,61 @@ class _EmptyNotification extends StatelessWidget {
               style: TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorNotification extends StatelessWidget {
+  final String message;
+
+  const _ErrorNotification({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 58,
+              color: Colors.red.withOpacity(0.7),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Terjadi Kesalahan',
+              style: TextStyle(
+                color: AppTheme.textDark,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<NotifikasiBloc>().add(const NotifikasiEvent.load());
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
               ),
             ),
           ],
