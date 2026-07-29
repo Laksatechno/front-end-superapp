@@ -73,6 +73,7 @@ class Sale {
   final String shippingFee;
   final String tanggal; // "2026-02-26"
   final String? dueDate; // "2026-03-28" nullable
+  final String paymentStatus; // pending / paid / etc (sesuai backend)
   final String status; // pending/paid/etc (sesuai backend)
   final int isEditable;
 
@@ -101,6 +102,7 @@ class Sale {
     required this.details,
     required this.shipment,
     required this.payment,
+    required this.paymentStatus,
   });
 
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -117,6 +119,7 @@ class Sale {
       shippingFee: (json['shipping_fee'] ?? '0').toString(),
       tanggal: (json['tanggal'] ?? '').toString(),
       dueDate: json['due_date']?.toString(),
+      paymentStatus: (json['payment_status'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       isEditable: _asInt(json['is_editable']),
       customer: json['customer'] is Map

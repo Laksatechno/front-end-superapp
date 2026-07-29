@@ -15,6 +15,7 @@ import 'package:yofa/pageadmin/sales/tagihansales/pdfview_page.dart';
 import '../../../theme/app_theme.dart';
 
 import 'package:yofa/pageadmin/sales/tagihansales/bloc/sales_bloc.dart';
+import 'package:yofa/pageadmin/sales/tagihansales/datasource/sales_ds.dart';
 import 'package:yofa/pageadmin/sales/tagihansales/model/sales_models.dart';
 
 class TagihanSales extends StatefulWidget {
@@ -26,6 +27,7 @@ class TagihanSales extends StatefulWidget {
 
 class _TagihanSalesState extends State<TagihanSales> {
   final TextEditingController _searchCtrl = TextEditingController();
+  bool _isUpdatingStatus = false;
 
   @override
   void initState() {
@@ -110,23 +112,197 @@ class _TagihanSalesState extends State<TagihanSales> {
     );
   }
 
-  Widget _statusBadgeFromSale(Sale s) {
-    final paid = (s.status.toLowerCase() == 'paid' || s.status.toLowerCase() == 'lunas');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: paid ? const Color(0xFFE9FBF2) : const Color(0xFFFFF3E7),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: paid ? const Color(0xFFBFEED3) : const Color(0xFFFFD4B3),
-        ),
+  Future<void> _showUpdatePaymentStatusModal(BuildContext context, Sale s) async {
+    final options = [
+      ('Menunggu', 'menunggu'),
+      ('Sedang Verifikasi Admin', 'sedang verifikasi admin'),
+      ('Lunas', 'lunas'),
+    ];
+
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Text(
-        paid ? 'Lunas' : 'Pending',
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 12,
-          color: paid ? const Color(0xFF1F8B4C) : const Color(0xFFB15A00),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Update Status Pembayaran',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s.invoiceNumber,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: Color(0xFF6F646B),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...options.map((opt) {
+                  final displayLabel = opt.$1;
+                  final statusValue = opt.$2;
+                  final isCurrent = s.paymentStatus.toLowerCase().trim() == statusValue;
+
+                  return ListTile(
+                    leading: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _statusBadgeColor(statusValue),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    title: Text(
+                      displayLabel,
+                      style: TextStyle(
+                        fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w600,
+                        color: isCurrent ? AppTheme.primary : AppTheme.textDark,
+                      ),
+                    ),
+                    trailing: isCurrent
+                        ? Icon(Icons.check_circle_rounded, color: AppTheme.primary)
+                        : null,
+                    onTap: isCurrent || _isUpdatingStatus
+                        ? null
+                        : () {
+                            Navigator.pop(ctx);
+                            _updatePaymentStatus(s, statusValue);
+                          },
+                  );
+                }),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _statusBadgeColor(String status) {
+    final ps = status.toLowerCase().trim();
+    if (ps == 'lunas' || ps == 'paid') {
+      return const Color(0xFF1F8B4C);
+    } else if (ps == 'sedang verifikasi admin' || ps == 'sedang_verifikasi_admin') {
+      return const Color(0xFF1A5FB4);
+    } else if (ps == 'menunggu' || ps == 'pending') {
+      return const Color(0xFFB15A00);
+    }
+    return const Color(0xFFB15A00);
+  }
+
+  Future<void> _updatePaymentStatus(Sale s, String newStatus) async {
+    setState(() => _isUpdatingStatus = true);
+
+    final ds = SalesDataSource();
+    final result = await ds.updatePaymentStatus(
+      saleId: s.id,
+      paymentStatus: newStatus,
+    );
+
+    setState(() => _isUpdatingStatus = false);
+
+    result.fold(
+      (err) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $err')),
+        );
+      },
+      (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status berhasil diupdate')),
+        );
+        // Refresh list
+        context.read<SalesBloc>().add(const SalesEvent.refresh());
+      },
+    );
+  }
+
+  Widget _statusBadgeFromSale(Sale s) {
+    final ps = s.paymentStatus.toLowerCase().trim();
+    // Mapping payment status ke label & warna
+    late final String label;
+    late final Color bg;
+    late final Color border;
+    late final Color fg;
+
+    if (ps == 'lunas' || ps == 'paid') {
+      label = 'Lunas';
+      bg = const Color(0xFFE9FBF2);
+      border = const Color(0xFFBFEED3);
+      fg = const Color(0xFF1F8B4C);
+    } else if (ps == 'sedang verifikasi admin' || ps == 'sedang_verifikasi_admin') {
+      label = 'Verifikasi';
+      bg = const Color(0xFFE8F0FE);
+      border = const Color(0xFFABC8F1);
+      fg = const Color(0xFF1A5FB4);
+    } else if (ps == 'menunggu' || ps == 'pending') {
+      label = 'Menunggu';
+      bg = const Color(0xFFFFF3E7);
+      border = const Color(0xFFFFD4B3);
+      fg = const Color(0xFFB15A00);
+    } else {
+      // fallback untuk nilai tak dikenal
+      label = ps.isNotEmpty ? s.paymentStatus : 'Menunggu';
+      bg = const Color(0xFFFFF3E7);
+      border = const Color(0xFFFFD4B3);
+      fg = const Color(0xFFB15A00);
+    }
+
+    return GestureDetector(
+      onTap: () => _showUpdatePaymentStatusModal(context, s),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                color: fg,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.edit_rounded,
+              size: 10,
+              color: fg.withOpacity(0.7),
+            ),
+          ],
         ),
       ),
     );
@@ -144,9 +320,9 @@ class _TagihanSalesState extends State<TagihanSales> {
   }
 
   String _fmtDateUI(String? isoOrDate) {
-    if (isoOrDate == null || isoOrDate.isEmpty) return '-';
+    if (isoOrDate == null || isoOrDate.isEmpty) return 'CASH';
     // backend: "2026-03-28" (date only)
-    final parts = isoOrDate.split(' ').first.split('-');
+    final parts = isoOrDate.split(' ').first.split('CASH');
     if (parts.length != 3) return isoOrDate;
     final y = parts[0];
     final m = parts[1];
@@ -383,8 +559,9 @@ class _TagihanSalesState extends State<TagihanSales> {
             ),
             items: const [
               DropdownMenuItem<String?>(value: null, child: Text('Semua')),
-              DropdownMenuItem<String?>(value: 'pending', child: Text('Pending')),
-              DropdownMenuItem<String?>(value: 'completed', child: Text('Lunas')),
+              DropdownMenuItem<String?>(value: 'menunggu', child: Text('Menunggu')),
+              DropdownMenuItem<String?>(value: 'sedang verifikasi admin', child: Text('Verifikasi')),
+              DropdownMenuItem<String?>(value: 'lunas', child: Text('Lunas')),
             ],
             onChanged: (val) {
               context.read<SalesBloc>().add(SalesEvent.applyFilter(paymentStatus: val));

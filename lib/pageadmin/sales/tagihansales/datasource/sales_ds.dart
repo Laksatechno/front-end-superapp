@@ -66,4 +66,51 @@ class SalesDataSource {
       return Left('Failed to fetch sales: $e');
     }
   }
+
+  Future<Either<String, String>> updatePaymentStatus({
+    required int saleId,
+    required String paymentStatus,
+  }) async {
+    try {
+      final authData = await AuthLocalDatasource().getAuthData();
+      final token = authData?.token;
+
+      if (token == null || token.isEmpty) {
+        return const Left('Authorization token is missing');
+      }
+
+      final url = Uri.parse('${Variables.baseUrl}/sales/$saleId/update-payment-status');
+
+      final res = await _client.post(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'payment_status': paymentStatus,
+        }),
+      );
+
+      if (res.statusCode != 200) {
+        return Left('Failed to update status: ${res.statusCode}');
+      }
+
+      final decoded = json.decode(res.body);
+      if (decoded is! Map<String, dynamic>) {
+        return const Left('Invalid response format');
+      }
+
+      final status = (decoded['status'] ?? '').toString().toLowerCase();
+      if (status != 'success') {
+        final msg = (decoded['message'] ?? 'Unknown error').toString();
+        return Left(msg);
+      }
+
+      return const Right('Success');
+    } catch (e) {
+      return Left('Failed to update status: $e');
+    }
+  }
 }
