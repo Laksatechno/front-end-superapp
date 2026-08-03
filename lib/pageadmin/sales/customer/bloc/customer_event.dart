@@ -3,7 +3,7 @@ part of 'customer_bloc.dart';
 @freezed
 class CustomerEvent with _$CustomerEvent {
   const factory CustomerEvent.started() = _Started;
-  
+
   const factory CustomerEvent.getCustomers({
     @Default(1) int page,
     @Default(10) int perPage,

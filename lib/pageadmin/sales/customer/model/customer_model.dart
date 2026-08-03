@@ -1,3 +1,10 @@
+class CustomerPageResult {
+  final List<Customer> customers;
+  final int lastPage;
+
+  CustomerPageResult({required this.customers, required this.lastPage});
+}
+
 class Customer {
   final int id;
   final int? areaId;

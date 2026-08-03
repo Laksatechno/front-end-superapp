@@ -9,10 +9,10 @@ class CustomerDataSource {
   final http.Client _client;
   CustomerDataSource({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<Either<String, List<Customer>>> fetchCustomers({
+  Future<Either<String, CustomerPageResult>> fetchCustomers({
     int page = 1,
     int perPage = 10,
-    String? filterType, // filter_type
+    String? filterType,
     String? status,
   }) async {
     try {
@@ -47,8 +47,6 @@ class CustomerDataSource {
 
       final decoded = json.decode(response.body);
 
-      //  sesuai JSON kamu:
-      // { success: true, message: "...", data: { data: [ ... ] } }
       final success = (decoded is Map && decoded['success'] == true);
       if (!success) {
         final msg = (decoded is Map ? decoded['message'] : null)?.toString() ?? 'Unknown error';
@@ -57,13 +55,16 @@ class CustomerDataSource {
 
       final dataObj = (decoded as Map<String, dynamic>)['data'];
       final list = (dataObj is Map<String, dynamic>) ? (dataObj['data'] as List?) : null;
+      final lastPage = (dataObj is Map<String, dynamic>)
+          ? (dataObj['last_page'] as int? ?? 1)
+          : 1;
 
       final customers = (list ?? [])
           .whereType<Map<String, dynamic>>()
           .map(Customer.fromMap)
           .toList();
 
-      return Right(customers);
+      return Right(CustomerPageResult(customers: customers, lastPage: lastPage));
     } catch (e) {
       return Left('Failed to fetch data: $e');
     }

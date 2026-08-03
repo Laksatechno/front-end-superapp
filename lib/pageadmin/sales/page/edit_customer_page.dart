@@ -18,7 +18,7 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
   late TextEditingController _emailCtrl;
   late TextEditingController _addressCtrl;
 
-  late String _type;
+  String? _type;
   String? _area;
 
   final List<String> _types = ['Reguler', 'Subdis', 'PMI'];
@@ -32,8 +32,17 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
     _emailCtrl = TextEditingController(text: widget.item.email);
     _addressCtrl = TextEditingController(text: widget.item.address);
 
-    _type = widget.item.type;
-    _area = widget.item.area;
+    // Pastikan _type ada di dalam list, kalau tidak set null (tampilkan placeholder)
+    final rawType = widget.item.type.trim();
+    _type = rawType.isEmpty
+        ? null
+        : _types.cast<String?>().firstWhere(
+            (t) => t!.toLowerCase() == rawType.toLowerCase(),
+            orElse: () => null,
+          );
+
+    // _area diset null dulu, akan di-resolve saat area list sudah load
+    _area = widget.item.area == '-' ? null : widget.item.area;
 
     context.read<AreaBloc>().add(const AreaEvent.started());
   }
@@ -110,16 +119,32 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
           ),
 
           success: (areas) {
+            final areaNames = areas.map((e) => e.name).toList();
+
+            // Pastikan value ada di list, kalau tidak ada set null agar tidak crash
+            final validArea = areaNames.contains(_area) ? _area : null;
+            if (_area != validArea) {
+              // update state setelah build selesai
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _area = validArea);
+              });
+            }
+
             return DropdownButtonFormField<String>(
-              value: _area,
-              items: areas
-                  .map(
-                    (e) => DropdownMenuItem<String>(
-                      value: e.name,
-                      child: Text(e.name),
-                    ),
-                  )
-                  .toList(),
+              value: validArea,
+              items: [
+                // Tambah opsi kosong agar bisa tidak memilih area
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('-- Tidak ada area --'),
+                ),
+                ...areas.map(
+                  (e) => DropdownMenuItem<String>(
+                    value: e.name,
+                    child: Text(e.name),
+                  ),
+                ),
+              ],
               onChanged: (v) => setState(() => _area = v),
               decoration: _dec('Pilih area...', icon: Icons.map_outlined),
             );
@@ -227,10 +252,17 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _type,
-                  items: _types
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _type = v ?? _type),
+                  hint: const Text('Pilih tipe pelanggan...'),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('-- Pilih tipe pelanggan --'),
+                    ),
+                    ..._types.map(
+                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _type = v),
                   decoration: _dec('Pilih tipe...', icon: Icons.badge_outlined),
                 ),
 

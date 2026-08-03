@@ -186,15 +186,13 @@ Future<Either<String, String>> logout() async {
   }
 
   Future<Either<String, RegisterModel>> register({
-    required String name,
+    required String namaInstansi,
+    required String namaPic,
+    required String nomorPic,
+    required String alamat,
     required String email,
     required String password,
     required String passwordConfirmation,
-    required String noHp,
-    required String alamat,
-    required String tipePelanggan,
-    required String jenisInstitusi,
-    required int marketingId,
   }) async {
     try {
       final url = Uri.parse('${Variables.baseUrl}/register');
@@ -206,19 +204,16 @@ Future<Either<String, String>> logout() async {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'name': name,
+          'nama_instansi': namaInstansi,
+          'name': namaPic,
+          'no_hp': nomorPic,
+          'alamat': alamat,
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
-          'no_hp': noHp,
-          'alamat': alamat,
-          'tipe_pelanggan': tipePelanggan,
-          'jenis_institusi': jenisInstitusi,
-          'marketing_id': marketingId,
         }),
       );
-      // print data body 
-      print("Jenis Institusi: " + jenisInstitusi);
+      print('REGISTER BODY: namaInstansi=$namaInstansi, namaPic=$namaPic');
 
       final body = jsonDecode(response.body);
 

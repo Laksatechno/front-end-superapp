@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RegisterEvent {
 
- String get name; String get email; String get password; String get passwordConfirmation; String get noHp; String get alamat; String get tipePelanggan; String get jenisInstitusi; int get marketingId;
+ String get namaInstansi; String get namaPic; String get nomorPic; String get alamat; String get email; String get password; String get passwordConfirmation;
 /// Create a copy of RegisterEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $RegisterEventCopyWith<RegisterEvent> get copyWith => _$RegisterEventCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegisterEvent&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.passwordConfirmation, passwordConfirmation) || other.passwordConfirmation == passwordConfirmation)&&(identical(other.noHp, noHp) || other.noHp == noHp)&&(identical(other.alamat, alamat) || other.alamat == alamat)&&(identical(other.tipePelanggan, tipePelanggan) || other.tipePelanggan == tipePelanggan)&&(identical(other.jenisInstitusi, jenisInstitusi) || other.jenisInstitusi == jenisInstitusi)&&(identical(other.marketingId, marketingId) || other.marketingId == marketingId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegisterEvent&&(identical(other.namaInstansi, namaInstansi) || other.namaInstansi == namaInstansi)&&(identical(other.namaPic, namaPic) || other.namaPic == namaPic)&&(identical(other.nomorPic, nomorPic) || other.nomorPic == nomorPic)&&(identical(other.alamat, alamat) || other.alamat == alamat)&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.passwordConfirmation, passwordConfirmation) || other.passwordConfirmation == passwordConfirmation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,email,password,passwordConfirmation,noHp,alamat,tipePelanggan,jenisInstitusi,marketingId);
+int get hashCode => Object.hash(runtimeType,namaInstansi,namaPic,nomorPic,alamat,email,password,passwordConfirmation);
 
 @override
 String toString() {
-  return 'RegisterEvent(name: $name, email: $email, password: $password, passwordConfirmation: $passwordConfirmation, noHp: $noHp, alamat: $alamat, tipePelanggan: $tipePelanggan, jenisInstitusi: $jenisInstitusi, marketingId: $marketingId)';
+  return 'RegisterEvent(namaInstansi: $namaInstansi, namaPic: $namaPic, nomorPic: $nomorPic, alamat: $alamat, email: $email, password: $password, passwordConfirmation: $passwordConfirmation)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $RegisterEventCopyWith<$Res>  {
   factory $RegisterEventCopyWith(RegisterEvent value, $Res Function(RegisterEvent) _then) = _$RegisterEventCopyWithImpl;
 @useResult
 $Res call({
- String name, String email, String password, String passwordConfirmation, String noHp, String alamat, String tipePelanggan, String jenisInstitusi, int marketingId
+ String namaInstansi, String namaPic, String nomorPic, String alamat, String email, String password, String passwordConfirmation
 });
 
 
@@ -62,18 +62,16 @@ class _$RegisterEventCopyWithImpl<$Res>
 
 /// Create a copy of RegisterEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? email = null,Object? password = null,Object? passwordConfirmation = null,Object? noHp = null,Object? alamat = null,Object? tipePelanggan = null,Object? jenisInstitusi = null,Object? marketingId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? namaInstansi = null,Object? namaPic = null,Object? nomorPic = null,Object? alamat = null,Object? email = null,Object? password = null,Object? passwordConfirmation = null,}) {
   return _then(_self.copyWith(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+namaInstansi: null == namaInstansi ? _self.namaInstansi : namaInstansi // ignore: cast_nullable_to_non_nullable
+as String,namaPic: null == namaPic ? _self.namaPic : namaPic // ignore: cast_nullable_to_non_nullable
+as String,nomorPic: null == nomorPic ? _self.nomorPic : nomorPic // ignore: cast_nullable_to_non_nullable
+as String,alamat: null == alamat ? _self.alamat : alamat // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
 as String,passwordConfirmation: null == passwordConfirmation ? _self.passwordConfirmation : passwordConfirmation // ignore: cast_nullable_to_non_nullable
-as String,noHp: null == noHp ? _self.noHp : noHp // ignore: cast_nullable_to_non_nullable
-as String,alamat: null == alamat ? _self.alamat : alamat // ignore: cast_nullable_to_non_nullable
-as String,tipePelanggan: null == tipePelanggan ? _self.tipePelanggan : tipePelanggan // ignore: cast_nullable_to_non_nullable
-as String,jenisInstitusi: null == jenisInstitusi ? _self.jenisInstitusi : jenisInstitusi // ignore: cast_nullable_to_non_nullable
-as String,marketingId: null == marketingId ? _self.marketingId : marketingId // ignore: cast_nullable_to_non_nullable
-as int,
+as String,
   ));
 }
 
@@ -158,10 +156,10 @@ return register(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name,  String email,  String password,  String passwordConfirmation,  String noHp,  String alamat,  String tipePelanggan,  String jenisInstitusi,  int marketingId)?  register,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String namaInstansi,  String namaPic,  String nomorPic,  String alamat,  String email,  String password,  String passwordConfirmation)?  register,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Register() when register != null:
-return register(_that.name,_that.email,_that.password,_that.passwordConfirmation,_that.noHp,_that.alamat,_that.tipePelanggan,_that.jenisInstitusi,_that.marketingId);case _:
+return register(_that.namaInstansi,_that.namaPic,_that.nomorPic,_that.alamat,_that.email,_that.password,_that.passwordConfirmation);case _:
   return orElse();
 
 }
@@ -179,10 +177,10 @@ return register(_that.name,_that.email,_that.password,_that.passwordConfirmation
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name,  String email,  String password,  String passwordConfirmation,  String noHp,  String alamat,  String tipePelanggan,  String jenisInstitusi,  int marketingId)  register,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String namaInstansi,  String namaPic,  String nomorPic,  String alamat,  String email,  String password,  String passwordConfirmation)  register,}) {final _that = this;
 switch (_that) {
 case _Register():
-return register(_that.name,_that.email,_that.password,_that.passwordConfirmation,_that.noHp,_that.alamat,_that.tipePelanggan,_that.jenisInstitusi,_that.marketingId);case _:
+return register(_that.namaInstansi,_that.namaPic,_that.nomorPic,_that.alamat,_that.email,_that.password,_that.passwordConfirmation);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +197,10 @@ return register(_that.name,_that.email,_that.password,_that.passwordConfirmation
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name,  String email,  String password,  String passwordConfirmation,  String noHp,  String alamat,  String tipePelanggan,  String jenisInstitusi,  int marketingId)?  register,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String namaInstansi,  String namaPic,  String nomorPic,  String alamat,  String email,  String password,  String passwordConfirmation)?  register,}) {final _that = this;
 switch (_that) {
 case _Register() when register != null:
-return register(_that.name,_that.email,_that.password,_that.passwordConfirmation,_that.noHp,_that.alamat,_that.tipePelanggan,_that.jenisInstitusi,_that.marketingId);case _:
+return register(_that.namaInstansi,_that.namaPic,_that.nomorPic,_that.alamat,_that.email,_that.password,_that.passwordConfirmation);case _:
   return null;
 
 }
@@ -214,18 +212,16 @@ return register(_that.name,_that.email,_that.password,_that.passwordConfirmation
 
 
 class _Register implements RegisterEvent {
-  const _Register({required this.name, required this.email, required this.password, required this.passwordConfirmation, required this.noHp, required this.alamat, required this.tipePelanggan, required this.jenisInstitusi, required this.marketingId});
+  const _Register({required this.namaInstansi, required this.namaPic, required this.nomorPic, required this.alamat, required this.email, required this.password, required this.passwordConfirmation});
   
 
-@override final  String name;
+@override final  String namaInstansi;
+@override final  String namaPic;
+@override final  String nomorPic;
+@override final  String alamat;
 @override final  String email;
 @override final  String password;
 @override final  String passwordConfirmation;
-@override final  String noHp;
-@override final  String alamat;
-@override final  String tipePelanggan;
-@override final  String jenisInstitusi;
-@override final  int marketingId;
 
 /// Create a copy of RegisterEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +233,16 @@ _$RegisterCopyWith<_Register> get copyWith => __$RegisterCopyWithImpl<_Register>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Register&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.passwordConfirmation, passwordConfirmation) || other.passwordConfirmation == passwordConfirmation)&&(identical(other.noHp, noHp) || other.noHp == noHp)&&(identical(other.alamat, alamat) || other.alamat == alamat)&&(identical(other.tipePelanggan, tipePelanggan) || other.tipePelanggan == tipePelanggan)&&(identical(other.jenisInstitusi, jenisInstitusi) || other.jenisInstitusi == jenisInstitusi)&&(identical(other.marketingId, marketingId) || other.marketingId == marketingId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Register&&(identical(other.namaInstansi, namaInstansi) || other.namaInstansi == namaInstansi)&&(identical(other.namaPic, namaPic) || other.namaPic == namaPic)&&(identical(other.nomorPic, nomorPic) || other.nomorPic == nomorPic)&&(identical(other.alamat, alamat) || other.alamat == alamat)&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.passwordConfirmation, passwordConfirmation) || other.passwordConfirmation == passwordConfirmation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,email,password,passwordConfirmation,noHp,alamat,tipePelanggan,jenisInstitusi,marketingId);
+int get hashCode => Object.hash(runtimeType,namaInstansi,namaPic,nomorPic,alamat,email,password,passwordConfirmation);
 
 @override
 String toString() {
-  return 'RegisterEvent.register(name: $name, email: $email, password: $password, passwordConfirmation: $passwordConfirmation, noHp: $noHp, alamat: $alamat, tipePelanggan: $tipePelanggan, jenisInstitusi: $jenisInstitusi, marketingId: $marketingId)';
+  return 'RegisterEvent.register(namaInstansi: $namaInstansi, namaPic: $namaPic, nomorPic: $nomorPic, alamat: $alamat, email: $email, password: $password, passwordConfirmation: $passwordConfirmation)';
 }
 
 
@@ -257,7 +253,7 @@ abstract mixin class _$RegisterCopyWith<$Res> implements $RegisterEventCopyWith<
   factory _$RegisterCopyWith(_Register value, $Res Function(_Register) _then) = __$RegisterCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String email, String password, String passwordConfirmation, String noHp, String alamat, String tipePelanggan, String jenisInstitusi, int marketingId
+ String namaInstansi, String namaPic, String nomorPic, String alamat, String email, String password, String passwordConfirmation
 });
 
 
@@ -274,18 +270,16 @@ class __$RegisterCopyWithImpl<$Res>
 
 /// Create a copy of RegisterEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? email = null,Object? password = null,Object? passwordConfirmation = null,Object? noHp = null,Object? alamat = null,Object? tipePelanggan = null,Object? jenisInstitusi = null,Object? marketingId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? namaInstansi = null,Object? namaPic = null,Object? nomorPic = null,Object? alamat = null,Object? email = null,Object? password = null,Object? passwordConfirmation = null,}) {
   return _then(_Register(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+namaInstansi: null == namaInstansi ? _self.namaInstansi : namaInstansi // ignore: cast_nullable_to_non_nullable
+as String,namaPic: null == namaPic ? _self.namaPic : namaPic // ignore: cast_nullable_to_non_nullable
+as String,nomorPic: null == nomorPic ? _self.nomorPic : nomorPic // ignore: cast_nullable_to_non_nullable
+as String,alamat: null == alamat ? _self.alamat : alamat // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
 as String,passwordConfirmation: null == passwordConfirmation ? _self.passwordConfirmation : passwordConfirmation // ignore: cast_nullable_to_non_nullable
-as String,noHp: null == noHp ? _self.noHp : noHp // ignore: cast_nullable_to_non_nullable
-as String,alamat: null == alamat ? _self.alamat : alamat // ignore: cast_nullable_to_non_nullable
-as String,tipePelanggan: null == tipePelanggan ? _self.tipePelanggan : tipePelanggan // ignore: cast_nullable_to_non_nullable
-as String,jenisInstitusi: null == jenisInstitusi ? _self.jenisInstitusi : jenisInstitusi // ignore: cast_nullable_to_non_nullable
-as String,marketingId: null == marketingId ? _self.marketingId : marketingId // ignore: cast_nullable_to_non_nullable
-as int,
+as String,
   ));
 }
 

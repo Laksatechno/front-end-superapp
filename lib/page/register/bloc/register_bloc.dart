@@ -21,15 +21,13 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     emit(const RegisterState.loading());
 
     final result = await _remote.register(
-      name: event.name,
+      namaInstansi: event.namaInstansi,
+      namaPic: event.namaPic,
+      nomorPic: event.nomorPic,
+      alamat: event.alamat,
       email: event.email,
       password: event.password,
-      passwordConfirmation: event.passwordConfirmation,
-      noHp: event.noHp,
-      alamat: event.alamat,
-      tipePelanggan: event.tipePelanggan,
-      jenisInstitusi: event.jenisInstitusi,
-      marketingId: event.marketingId,
+      passwordConfirmation: event.passwordConfirmation
     );
 
     result.fold(

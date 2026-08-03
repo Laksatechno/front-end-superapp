@@ -22,6 +22,7 @@ class CustomerPage extends StatefulWidget {
 
 class _CustomerPageState extends State<CustomerPage> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
 
   String _area = 'Semua Area';
   String _tipe = 'Semua Tipe';
@@ -33,14 +34,25 @@ class _CustomerPageState extends State<CustomerPage> {
     super.initState();
     // load dari API
     context.read<CustomerBloc>().add(
-      const CustomerEvent.getCustomers(page: 1, perPage: 50),
+      const CustomerEvent.getCustomers(page: 1, perPage: 10),
     );
     context.read<AreaBloc>().add(const AreaEvent.started());
+
+    // Detect scroll ke ujung bawah → load next page
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
+      context.read<CustomerBloc>().loadNextPage();
+    }
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -397,6 +409,10 @@ class _CustomerPageState extends State<CustomerPage> {
                     final items = data.map(CustomerItem.fromCustomer).toList();
                     final list = _applyFilter(items);
 
+                    final bloc = context.read<CustomerBloc>();
+                    final isLoadingMore = bloc.isLoadingMore;
+                    final hasReachedMax = bloc.hasReachedMax;
+
                     if (list.isEmpty) {
                       return const Center(child: Text('Data customer kosong'));
                     }
@@ -407,17 +423,35 @@ class _CustomerPageState extends State<CustomerPage> {
                           const CustomerEvent.refresh(),
                         );
                       },
-                      child: ListView.separated(
+                      child: ListView.builder(
+                        controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                         physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: list.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        // +1 untuk loading indicator di bawah
+                        itemCount: list.length + (isLoadingMore || !hasReachedMax ? 0 : 0) + 1,
                         itemBuilder: (_, i) {
+                          // Item terakhir: loading indicator atau "no more data"
+                          if (i == list.length) {
+                            if (isLoadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            if (hasReachedMax) {
+                              return const SizedBox(height: 8);
+                            }
+                            return const SizedBox(height: 8);
+                          }
+
                           final it = list[i];
-                          return _CustomerCard(
-                            item: it,
-                            onEdit: () => _onEdit(it),
-                            onDelete: () => _onDelete(it),
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _CustomerCard(
+                              item: it,
+                              onEdit: () => _onEdit(it),
+                              onDelete: () => _onDelete(it),
+                            ),
                           );
                         },
                       ),
