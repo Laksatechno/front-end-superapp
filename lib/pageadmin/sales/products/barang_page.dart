@@ -48,8 +48,8 @@ class _BarangPageState extends State<BarangPage> {
     );
   }
 
-  void _onDetail(int productId) {
-    Navigator.push(
+  void _onDetail(int productId) async {
+    final shouldRefresh = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
@@ -58,6 +58,13 @@ class _BarangPageState extends State<BarangPage> {
         ),
       ),
     );
+
+    // Jika kembali dari detail dengan sinyal refresh, load ulang data
+    if (shouldRefresh == true && mounted) {
+      context.read<ProductBloc>().add(
+        const ProductEvent.getProducts(page: 1, perPage: 10),
+      );
+    }
   }
 
   void _onEdit(_BarangItem item) {
@@ -221,19 +228,27 @@ class _BarangPageState extends State<BarangPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final item = items[i];
-                    return _BarangCard(
-                      item: item,
-                      onDetail: () => _onDetail(item.id),
-                      onEdit: () => _onEdit(item),
-                      onDelete: () => _onDelete(item),
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<ProductBloc>().add(
+                      const ProductEvent.refresh(page: 1, perPage: 10),
                     );
                   },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      final item = items[i];
+                      return _BarangCard(
+                        item: item,
+                        onDetail: () => _onDetail(item.id),
+                        onEdit: () => _onEdit(item),
+                        onDelete: () => _onDelete(item),
+                      );
+                    },
+                  ),
                 );
               },
             ),

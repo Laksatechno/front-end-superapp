@@ -205,7 +205,7 @@ class ProductRemoteDatasource {
         return const Left('Authorization token is missing');
       }
 
-      final url = Uri.parse('${Variables.baseUrl}/batches/${request.productId}');
+      final url = Uri.parse('${Variables.baseUrl}/batch/${request.productId}');
 
       final response = await _client.post(
         url,

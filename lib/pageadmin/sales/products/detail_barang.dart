@@ -52,15 +52,15 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
 
   // ===== Helpers =====
   String _fmtDate(DateTime? d) {
-    if (d == null) return '--:--:--';
+    if (d == null) return '-';
     final dd = d.day.toString().padLeft(2, '0');
     final mm = d.month.toString().padLeft(2, '0');
     return '$dd/$mm/${d.year}';
   }
 
-  DateTime _parseDateOrNow(String? v) {
-    if (v == null || v.isEmpty) return DateTime.now();
-    return DateTime.tryParse(v) ?? DateTime.now(); // "--:--:--";
+  DateTime? _parseDateOrNull(String? v) {
+    if (v == null || v.isEmpty) return null;
+    return DateTime.tryParse(v);
   }
 
   int _qtyFromString(String v) {
@@ -134,7 +134,7 @@ void _addBatch() {
     final TextEditingController batchCtrl = TextEditingController(text: item.batchNo);
     final TextEditingController nieCtrl = TextEditingController(text: item.nie);
     final TextEditingController tipeCtrl = TextEditingController(text: item.tipe);
-    DateTime exp = item.exp;
+    DateTime? exp = item.exp;
     int qty = item.qty;
 
     showModalBottomSheet(
@@ -150,7 +150,7 @@ void _addBatch() {
             Future<void> pickExpLocal() async {
               final picked = await showDatePicker(
                 context: ctx,
-                initialDate: exp,
+                initialDate: exp ?? DateTime.now(),
                 firstDate: DateTime(DateTime.now().year - 1),
                 lastDate: DateTime(DateTime.now().year + 20),
               );
@@ -455,23 +455,22 @@ void _addBatch() {
                       qty: _qtyFromString(b.qtyOnHand),
                       nie: (b.nie ?? '-'),
                       tipe: (b.typeModel ?? '-'),
-                      exp: _parseDateOrNow(b.expDate),
+                      exp: _parseDateOrNull(b.expDate),
                     );
                   }),
                 );
             });
           },
 
-          // TAMBAHKAN INI
           batchCreated: (message) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message)),
             );
 
-            // reload product detail
-            context.read<ProductBloc>().add(
-              ProductEvent.getProductDetail(id: widget.productId),
-            );
+            // Kembali ke barang_page dan bawa sinyal refresh = true
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.pop(context, true);
+            });
           },
 
           error: (msg) {
@@ -837,7 +836,7 @@ class _BatchItem {
   final int qty;
   final String nie;
   final String tipe;
-  final DateTime exp;
+  final DateTime? exp;
 
   const _BatchItem({
     required this.id,
@@ -845,7 +844,7 @@ class _BatchItem {
     required this.qty,
     required this.nie,
     required this.tipe,
-    required this.exp,
+    this.exp,
   });
 
   _BatchItem copyWith({
