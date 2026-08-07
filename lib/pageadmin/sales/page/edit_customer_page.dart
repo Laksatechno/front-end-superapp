@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yofa/theme/app_theme.dart';
 import 'package:yofa/pageadmin/sales/page/customer_page.dart' show CustomerItem;
 import 'package:yofa/pageadmin/sales/area/bloc/area_bloc.dart';
+import 'package:yofa/pageadmin/sales/customer/datasource/customer_ds.dart';
 
 class EditCustomerPage extends StatefulWidget {
   final CustomerItem item;
@@ -13,6 +14,8 @@ class EditCustomerPage extends StatefulWidget {
 }
 
 class _EditCustomerPageState extends State<EditCustomerPage> {
+  final _ds = CustomerDataSource();
+
   late TextEditingController _nameCtrl;
   late TextEditingController _phoneCtrl;
   late TextEditingController _emailCtrl;
@@ -23,6 +26,8 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
 
   final List<String> _types = ['Reguler', 'Subdis', 'PMI'];
 
+  bool _saving = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,7 +37,6 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
     _emailCtrl = TextEditingController(text: widget.item.email);
     _addressCtrl = TextEditingController(text: widget.item.address);
 
-    // Pastikan _type ada di dalam list, kalau tidak set null (tampilkan placeholder)
     final rawType = widget.item.type.trim();
     _type = rawType.isEmpty
         ? null
@@ -41,7 +45,6 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
             orElse: () => null,
           );
 
-    // _area diset null dulu, akan di-resolve saat area list sudah load
     _area = widget.item.area == '-' ? null : widget.item.area;
 
     context.read<AreaBloc>().add(const AreaEvent.started());
@@ -90,7 +93,7 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nama customer wajib diisi')),
@@ -98,11 +101,43 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Perubahan tersimpan')));
+    // resolve area name -> id
+    int? areaId;
+    if (_area != null) {
+      final areas = context.read<AreaBloc>().state.maybeWhen(
+        success: (areas) => areas,
+        orElse: () => [],
+      );
+      final match = areas.where((e) => e.name == _area);
+      areaId = match.isNotEmpty ? match.first.id : null;
+    }
 
-    Navigator.pop(context);
+    setState(() => _saving = true);
+
+    final result = await _ds.updateCustomer(
+      id: widget.item.id,
+      name: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      tipePelanggan: _type,
+      areaId: areaId,
+    );
+
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    result.fold(
+      (err) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      ),
+      (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perubahan tersimpan')),
+        );
+        Navigator.pop(context, true);
+      },
+    );
   }
 
   Widget _areaDropdown() {
@@ -113,18 +148,14 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
 
           loading: () => const Padding(
             padding: EdgeInsets.all(12),
-            // child: Center(child: CircularProgressIndicator()),
-            // pilih area dengan dropdown
-              
+            child: Center(child: CircularProgressIndicator()),
           ),
 
           success: (areas) {
             final areaNames = areas.map((e) => e.name).toList();
 
-            // Pastikan value ada di list, kalau tidak ada set null agar tidak crash
             final validArea = areaNames.contains(_area) ? _area : null;
             if (_area != validArea) {
-              // update state setelah build selesai
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) setState(() => _area = validArea);
               });
@@ -133,7 +164,6 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
             return DropdownButtonFormField<String>(
               value: validArea,
               items: [
-                // Tambah opsi kosong agar bisa tidak memilih area
                 const DropdownMenuItem<String>(
                   value: null,
                   child: Text('-- Tidak ada area --'),
@@ -167,143 +197,153 @@ class _EditCustomerPageState extends State<EditCustomerPage> {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        children: [
-          _card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Nama Customer',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _nameCtrl,
-                  decoration: _dec(
-                    'Nama customer...',
-                    icon: Icons.person_outline,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'No HP',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: _dec(
-                    'No HP...',
-                    icon: Icons.phone_iphone_rounded,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'Email',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _dec('Email...', icon: Icons.email_outlined),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'Alamat',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _addressCtrl,
-                  maxLines: 3,
-                  decoration: _dec(
-                    'Alamat...',
-                    icon: Icons.location_on_outlined,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'Tipe Pelanggan',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _type,
-                  hint: const Text('Pilih tipe pelanggan...'),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('-- Pilih tipe pelanggan --'),
+      body: AbsorbPointer(
+        absorbing: _saving,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          children: [
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Nama Customer',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
                     ),
-                    ..._types.map(
-                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() => _type = v),
-                  decoration: _dec('Pilih tipe...', icon: Icons.badge_outlined),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'Area',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.textDark,
                   ),
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nameCtrl,
+                    decoration: _dec(
+                      'Nama customer...',
+                      icon: Icons.person_outline,
+                    ),
+                  ),
 
-                /// AREA DROPDOWN DARI BLOC
-                _areaDropdown(),
-              ],
-            ),
-          ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No HP',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: _dec(
+                      'No HP...',
+                      icon: Icons.phone_iphone_rounded,
+                    ),
+                  ),
 
-          const SizedBox(height: 14),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Email',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _dec('Email...', icon: Icons.email_outlined),
+                  ),
 
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: _save,
-              child: const Text(
-                'Simpan',
-                style: TextStyle(fontWeight: FontWeight.w900),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Alamat',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _addressCtrl,
+                    maxLines: 3,
+                    decoration: _dec(
+                      'Alamat...',
+                      icon: Icons.location_on_outlined,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Tipe Pelanggan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _type,
+                    hint: const Text('Pilih tipe pelanggan...'),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('-- Pilih tipe pelanggan --'),
+                      ),
+                      ..._types.map(
+                        (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _type = v),
+                    decoration: _dec('Pilih tipe...', icon: Icons.badge_outlined),
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Area',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _areaDropdown(),
+                ],
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 14),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Simpan',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

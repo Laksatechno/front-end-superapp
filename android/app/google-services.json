@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "84064402981",
+    "project_id": "erp-yofacorpora",
+    "storage_bucket": "erp-yofacorpora.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:84064402981:android:ee49649301dcc3a23449cc",
+        "android_client_info": {
+          "package_name": "com.superapp.yofa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgM9tYNrbLYNvN0nOC_VHKgPyKzFhEnFk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

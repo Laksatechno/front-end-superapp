@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:yofa/datasources/auth/auth_local_datasource.dart';
 import 'package:yofa/models/response/auth_response_model.dart';
+import 'package:yofa/pageadmin/sales/page/customer_page.dart';
 import 'package:yofa/pageadmin/sales/products/barang_page.dart';
 import 'package:yofa/page/callplan/callplan_page.dart';
-import 'package:yofa/page/customer/customer_page.dart';
 import 'package:yofa/page/cuti/cuti_page.dart';
 import 'package:yofa/page/knowledge/knowledge_page.dart';
 import 'package:yofa/page/laporanharian/laporanharian_page.dart';
@@ -318,10 +318,23 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
 
   Widget _menuGrid() {
     final items = <_MenuItemData>[
-      _MenuItemData('Karyawanku', Icons.people_alt_outlined),
-      _MenuItemData('Sales', Icons.how_to_reg_outlined),
+      // _MenuItemData('Karyawanku', Icons.people_alt_outlined),
+      // _MenuItemData('Sales', Icons.how_to_reg_outlined),
+      _MenuItemData('Kehadiran', Icons.access_time_outlined),
+      _MenuItemData('Cuti', Icons.beach_access_outlined),
+      _MenuItemData('Laporan\nHarian', Icons.note_alt_outlined),
+      _MenuItemData('Callplan', Icons.map_outlined),
+      _MenuItemData('Scan Alat', Icons.qr_code_scanner_outlined),
+      _MenuItemData('Knowledge', Icons.edit_note_outlined),
+      _MenuItemData('Order', Icons.access_time_outlined),
+      _MenuItemData('Customer', Icons.beach_access_outlined),
+      _MenuItemData('Barang', Icons.note_alt_outlined),
+      _MenuItemData('Tagihan', Icons.receipt_long_outlined),
+      _MenuItemData('Pengiriman', Icons.local_shipping_outlined),
+      _MenuItemData('Laporan', Icons.qr_code_scanner_outlined),
+      _MenuItemData('Brosur', Icons.edit_note_outlined),
       // _MenuItemData('Pengiriman', Icons.local_shipping_outlined),
-      // _MenuItemData('Lainya..', Icons.more_horiz_rounded),
+      _MenuItemData('Lainya..', Icons.more_horiz_rounded),
     ];
 
     return Container(

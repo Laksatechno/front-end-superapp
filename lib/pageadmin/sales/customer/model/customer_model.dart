@@ -85,3 +85,89 @@ class Area {
     );
   }
 }
+
+class LinkedUser {
+  final int id;
+  final String name;
+  final String email;
+  final String role;
+
+  LinkedUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.role,
+  });
+
+  factory LinkedUser.fromMap(Map<String, dynamic> json) {
+    return LinkedUser(
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse('${json['id']}') ?? 0,
+      name: (json['name'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      role: (json['role'] ?? '').toString(),
+    );
+  }
+}
+
+class CustomerDetail {
+  final int id;
+  final int? areaId;
+  final int? userId;
+  final String name;
+  final String phone;
+  final String address;
+  final String email;
+  final String tipePelanggan;
+  final LinkedUser? user;
+  final Area? area;
+
+  CustomerDetail({
+    required this.id,
+    this.areaId,
+    this.userId,
+    required this.name,
+    required this.phone,
+    required this.address,
+    required this.email,
+    required this.tipePelanggan,
+    this.user,
+    this.area,
+  });
+
+  factory CustomerDetail.fromMap(Map<String, dynamic> json) {
+    final userJson = json['user'];
+    return CustomerDetail(
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse('${json['id']}') ?? 0,
+
+      areaId: json['area_id'] == null
+          ? null
+          : (json['area_id'] is int
+              ? json['area_id']
+              : int.tryParse('${json['area_id']}')),
+
+      userId: json['user_id'] == null
+          ? null
+          : (json['user_id'] is int
+              ? json['user_id']
+              : int.tryParse('${json['user_id']}')),
+
+      name: (json['name'] ?? '').toString(),
+      phone: (json['phone'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      tipePelanggan: (json['tipe_pelanggan'] ?? '').toString(),
+
+      user: userJson is Map<String, dynamic>
+          ? LinkedUser.fromMap(userJson)
+          : null,
+
+      area: json['area'] is Map<String, dynamic>
+          ? Area.fromMap(json['area'])
+          : null,
+    );
+  }
+}

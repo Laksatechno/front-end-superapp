@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yofa/pageadmin/sales/area/bloc/area_bloc.dart';
 import 'package:yofa/pageadmin/sales/customer/model/customer_model.dart';
+import 'package:yofa/pageadmin/sales/page/detail_customer_page.dart';
 import 'package:yofa/pageadmin/sales/page/edit_customer_page.dart'
     show EditCustomerPage;
 import 'package:yofa/pageadmin/sales/page/harga_produk_customer_page.dart';
@@ -9,9 +10,6 @@ import 'package:yofa/pageadmin/sales/page/tambah_customer_page.dart';
 import 'package:yofa/theme/app_theme.dart';
 
 import 'package:yofa/pageadmin/sales/customer/bloc/customer_bloc.dart';
-
-//  import model Customer kamu (sesuaikan path jika beda)
-// contoh: import 'package:yofa/pageadmin/sales/customer/model/customer.dart';
 
 class CustomerPage extends StatefulWidget {
   const CustomerPage({super.key});
@@ -32,13 +30,10 @@ class _CustomerPageState extends State<CustomerPage> {
   @override
   void initState() {
     super.initState();
-    // load dari API
     context.read<CustomerBloc>().add(
       const CustomerEvent.getCustomers(page: 1, perPage: 10),
     );
     context.read<AreaBloc>().add(const AreaEvent.started());
-
-    // Detect scroll ke ujung bawah → load next page
     _scrollCtrl.addListener(_onScroll);
   }
 
@@ -56,7 +51,6 @@ class _CustomerPageState extends State<CustomerPage> {
     super.dispose();
   }
 
-  // filter tetap di UI seperti punya kamu
   List<CustomerItem> _applyFilter(List<CustomerItem> items) {
     final q = _searchCtrl.text.trim().toLowerCase();
 
@@ -107,8 +101,8 @@ class _CustomerPageState extends State<CustomerPage> {
     );
   }
 
-  void _onEdit(CustomerItem item) {
-    Navigator.push(
+  Future<void> _onEdit(CustomerItem item) async {
+    final updated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider(
@@ -117,6 +111,9 @@ class _CustomerPageState extends State<CustomerPage> {
         ),
       ),
     );
+    if (updated == true && mounted) {
+      context.read<CustomerBloc>().add(const CustomerEvent.refresh());
+    }
   }
 
   Future<void> _onDelete(CustomerItem item) async {
@@ -155,9 +152,6 @@ class _CustomerPageState extends State<CustomerPage> {
         content: Text('TODO: Hapus customer (endpoint belum dibuat)'),
       ),
     );
-
-    // kalau sudah ada endpoint delete nanti:
-    // context.read<CustomerBloc>().add(CustomerEvent.delete(id: item.id));
   }
 
   Widget _filterChip({
@@ -244,13 +238,6 @@ class _CustomerPageState extends State<CustomerPage> {
     );
     if (res == null) return;
     setState(() => _tipe = res);
-
-    // kalau kamu mau filter remote (backend support filter_type), aktifkan ini:
-    // context.read<CustomerBloc>().add(CustomerEvent.getCustomers(
-    //   page: 1,
-    //   perPage: 50,
-    //   filterType: (_tipe == 'Semua Tipe') ? null : _tipe,
-    // ));
   }
 
   @override
@@ -282,12 +269,10 @@ class _CustomerPageState extends State<CustomerPage> {
       ),
       body: Column(
         children: [
-          // Search + filter (tetap sama)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Column(
               children: [
-                // Search
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -338,7 +323,6 @@ class _CustomerPageState extends State<CustomerPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 Row(
                   children: [
                     Expanded(
@@ -363,8 +347,6 @@ class _CustomerPageState extends State<CustomerPage> {
               ],
             ),
           ),
-
-          //  LIST: ambil dari Bloc, tapi UI list/card tetap sama
           Expanded(
             child: BlocConsumer<CustomerBloc, CustomerState>(
               listener: (context, state) {
@@ -405,13 +387,21 @@ class _CustomerPageState extends State<CustomerPage> {
                   ),
                   success: (message) => Center(child: Text(message)),
                   loaded: (data, page, perPage, filterType, status) {
-                    // data dari API: List<Customer> -> convert ke CustomerItem agar card lama tetap dipakai
-                    final items = data.map(CustomerItem.fromCustomer).toList();
+                    // resolve nama area dari AreaBloc (list endpoint hanya mengirim area_id)
+                    final areas = context.read<AreaBloc>().state.maybeWhen(
+                      success: (areas) => areas,
+                      orElse: () => [],
+                    );
+                    final areaById = <int, String>{
+                      for (final a in areas) a.id: a.name,
+                    };
+                    final items = data
+                        .map((c) => CustomerItem.fromCustomer(c, areaById))
+                        .toList();
                     final list = _applyFilter(items);
 
                     final bloc = context.read<CustomerBloc>();
                     final isLoadingMore = bloc.isLoadingMore;
-                    final hasReachedMax = bloc.hasReachedMax;
 
                     if (list.isEmpty) {
                       return const Center(child: Text('Data customer kosong'));
@@ -427,19 +417,14 @@ class _CustomerPageState extends State<CustomerPage> {
                         controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                         physics: const AlwaysScrollableScrollPhysics(),
-                        // +1 untuk loading indicator di bawah
-                        itemCount: list.length + (isLoadingMore || !hasReachedMax ? 0 : 0) + 1,
+                        itemCount: list.length + 1,
                         itemBuilder: (_, i) {
-                          // Item terakhir: loading indicator atau "no more data"
                           if (i == list.length) {
                             if (isLoadingMore) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 16),
                                 child: Center(child: CircularProgressIndicator()),
                               );
-                            }
-                            if (hasReachedMax) {
-                              return const SizedBox(height: 8);
                             }
                             return const SizedBox(height: 8);
                           }
@@ -449,6 +434,15 @@ class _CustomerPageState extends State<CustomerPage> {
                             padding: const EdgeInsets.only(bottom: 10),
                             child: _CustomerCard(
                               item: it,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DetailCustomerPage(customerId: it.id),
+                                  ),
+                                );
+                              },
                               onEdit: () => _onEdit(it),
                               onDelete: () => _onDelete(it),
                             ),
@@ -467,80 +461,80 @@ class _CustomerPageState extends State<CustomerPage> {
   }
 }
 
-// ===== Card (tetap sama) =====
+// ===== Card =====
 class _CustomerCard extends StatelessWidget {
   final CustomerItem item;
+  final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _CustomerCard({
     required this.item,
+    this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEFE6EC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.textDark,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEFE6EC)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x06000000),
+              blurRadius: 10,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.textDark,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _pill(item.type),
-                    const SizedBox(width: 6),
-                    _pill(item.area, solid: true),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _miniRow(Icons.phone_iphone_rounded, item.phone),
-                const SizedBox(height: 4),
-                _miniRow(Icons.location_on_outlined, item.address),
+                      const SizedBox(width: 8),
+                      _pill(item.type),
+                      const SizedBox(width: 6),
+                      _pill(item.area, solid: true),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _miniRow(Icons.phone_iphone_rounded, item.phone),
+                  const SizedBox(height: 4),
+                  _miniRow(Icons.location_on_outlined, item.address),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              children: [
+                _roundIcon(icon: Icons.edit_outlined, onTap: onEdit),
               ],
             ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            children: [
-              _roundIcon(icon: Icons.edit_outlined, onTap: onEdit),
-              // const SizedBox(height: 8),
-              // _roundIcon(
-              //   icon: Icons.delete_outline_rounded,
-              //   color: Colors.red,
-              //   onTap: onDelete,
-              // ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -607,7 +601,7 @@ class _CustomerCard extends StatelessWidget {
   }
 }
 
-// ===== Bottomsheet Picker (tetap sama) =====
+// ===== Bottomsheet Picker =====
 class _PickerSheet extends StatelessWidget {
   final String title;
   final List<String> items;
@@ -677,7 +671,6 @@ class _PickerSheet extends StatelessWidget {
   }
 }
 
-// ===== mapping areaId -> nama area (sesuaikan dengan master area kamu) =====
 const Map<int, String> kAreaMap = {
   1: 'Jakarta',
   2: 'Bogor',
@@ -692,7 +685,7 @@ String areaNameFromId(int? id) {
   return kAreaMap[id] ?? 'Area $id';
 }
 
-// ===== Model UI (tetap seperti kamu, tapi dari API) =====
+// ===== Model UI =====
 class CustomerItem {
   final int id;
   final String name;
@@ -712,8 +705,7 @@ class CustomerItem {
     required this.area,
   });
 
-  //  dari model API kamu
-  factory CustomerItem.fromCustomer(Customer c) {
+  factory CustomerItem.fromCustomer(Customer c, [Map<int, String>? areaById]) {
     return CustomerItem(
       id: c.id,
       name: c.name,
@@ -721,7 +713,7 @@ class CustomerItem {
       email: c.email,
       address: c.address,
       type: c.tipePelanggan,
-      area: c.area?.name ?? '-',
+      area: c.area?.name ?? areaById?[c.areaId] ?? areaNameFromId(c.areaId),
     );
   }
 }
